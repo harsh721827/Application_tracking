@@ -132,3 +132,18 @@ export const STAGE_MAP: Record<ApplicationStatus, StageConfig> = STAGES.reduce(
   },
   {} as Record<ApplicationStatus, StageConfig>
 );
+
+// Wards BMC1 .. BMC15
+export const WARDS: string[] = Array.from({ length: 15 }, (_, i) => `BMC${i + 1}`);
+
+// Auto-forward map: when a sign-pending stage is "done", it advances to the
+// next stage in the workflow. Stages not listed here have no automatic next step.
+export const NEXT_STAGE: Partial<Record<ApplicationStatus, ApplicationStatus>> = {
+  received: 'spot',
+  spot: 'lipik_sign_pending',
+  lipik_sign_pending: 'karadhikari_sign_pending',
+  karadhikari_sign_pending: 'sent_to_approval',
+  correction_pending: 'lipik_sign_pending',
+  noteshit_lipik_sign_pending: 'noteshit_karadhikari_sign_pending',
+  noteshit_karadhikari_sign_pending: 'sent_to_approval',
+};

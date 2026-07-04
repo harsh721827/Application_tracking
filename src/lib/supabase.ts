@@ -22,6 +22,7 @@ export interface Application {
   application_number: string | null;
   subject: string | null;
   department: string | null;
+  ward: string | null;
   status: ApplicationStatus;
   notes: string | null;
   received_date: string | null;

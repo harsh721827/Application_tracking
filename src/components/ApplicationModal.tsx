@@ -6,7 +6,7 @@ import {
   type ApplicationStatus,
   type ApplicationInsert,
 } from '../lib/supabase';
-import { STAGES } from '../lib/stages';
+import { STAGES, WARDS } from '../lib/stages';
 
 interface Props {
   open: boolean;
@@ -21,6 +21,7 @@ const empty: ApplicationInsert = {
   application_number: '',
   subject: '',
   department: '',
+  ward: '',
   status: 'received',
   notes: '',
   received_date: new Date().toISOString().slice(0, 10),
@@ -45,6 +46,7 @@ export default function ApplicationModal({
         application_number: initial.application_number ?? '',
         subject: initial.subject ?? '',
         department: initial.department ?? '',
+        ward: initial.ward ?? '',
         status: initial.status,
         notes: initial.notes ?? '',
         received_date: initial.received_date ?? new Date().toISOString().slice(0, 10),
@@ -155,6 +157,21 @@ export default function ApplicationModal({
               />
             </Field>
           </div>
+
+          <Field label="Ward">
+            <select
+              value={form.ward ?? ''}
+              onChange={(e) => update('ward', e.target.value)}
+              className="input"
+            >
+              <option value="">— Select ward —</option>
+              {WARDS.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </Field>
 
           <Field label="Subject">
             <input

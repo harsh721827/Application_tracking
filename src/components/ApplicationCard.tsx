@@ -1,19 +1,21 @@
-import { MoreVertical, Pencil, ArrowRight } from 'lucide-react';
+import { MoreVertical, Pencil, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import type { Application, ApplicationStatus } from '../lib/supabase';
-import { STAGES, STAGE_MAP } from '../lib/stages';
+import { STAGES, STAGE_MAP, NEXT_STAGE } from '../lib/stages';
 
 interface Props {
   app: Application;
   onEdit: (app: Application) => void;
   onMove: (id: string, status: ApplicationStatus) => void;
+  onForward: (id: string) => void;
 }
 
-export default function ApplicationCard({ app, onEdit, onMove }: Props) {
+export default function ApplicationCard({ app, onEdit, onMove, onForward }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const stage = STAGE_MAP[app.status];
+  const nextStage = NEXT_STAGE[app.status];
 
   useEffect(() => {
     if (!menuOpen && !moveOpen) return;
@@ -91,6 +93,11 @@ export default function ApplicationCard({ app, onEdit, onMove }: Props) {
       </div>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+        {app.ward && (
+          <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200">
+            {app.ward}
+          </span>
+        )}
         {app.application_number && (
           <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-600">
             {app.application_number}
@@ -118,6 +125,16 @@ export default function ApplicationCard({ app, onEdit, onMove }: Props) {
           <span>{new Date(app.received_date).toLocaleDateString()}</span>
         )}
       </div>
+
+      {nextStage && (
+        <button
+          onClick={() => onForward(app.id)}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-2 py-1.5 text-xs font-medium text-white transition hover:bg-slate-900"
+        >
+          <CheckCircle2 size={13} />
+          Mark Done &rarr; {STAGE_MAP[nextStage].shortLabel}
+        </button>
+      )}
     </div>
   );
 }

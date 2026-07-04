@@ -5,7 +5,7 @@ import {
   type Application,
   type ApplicationStatus,
 } from './lib/supabase';
-import { STAGES, STAGE_MAP } from './lib/stages';
+import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE } from './lib/stages';
 // export utilities are dynamically imported on click to keep the bundle small
 import ApplicationCard from './components/ApplicationCard';
 import ApplicationModal from './components/ApplicationModal';
@@ -16,6 +16,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState('all');
+  const [wardFilter, setWardFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Application | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>('received');
@@ -66,7 +67,9 @@ export default function App() {
       (a.notes ?? '').toLowerCase().includes(q);
     const matchesDept =
       deptFilter === 'all' || a.department === deptFilter;
-    return matchesQuery && matchesDept;
+    const matchesWard =
+      wardFilter === 'all' || a.ward === wardFilter;
+    return matchesQuery && matchesDept && matchesWard;
   });
 
   const byStatus = (status: ApplicationStatus) =>
@@ -103,6 +106,14 @@ export default function App() {
     setApps((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status } : a))
     );
+  };
+
+  const forward = async (id: string) => {
+    const app = apps.find((a) => a.id === id);
+    if (!app) return;
+    const next = NEXT_STAGE[app.status];
+    if (!next) return;
+    await move(id, next);
   };
 
   return (
@@ -146,6 +157,18 @@ export default function App() {
               {departments.map((d) => (
                 <option key={d} value={d}>
                   {d}
+                </option>
+              ))}
+            </select>
+            <select
+              value={wardFilter}
+              onChange={(e) => setWardFilter(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            >
+              <option value="all">All Wards</option>
+              {WARDS.map((w) => (
+                <option key={w} value={w}>
+                  {w}
                 </option>
               ))}
             </select>
@@ -273,6 +296,7 @@ export default function App() {
                             app={app}
                             onEdit={openEdit}
                             onMove={move}
+                            onForward={forward}
                           />
                         ))}
                         <button
