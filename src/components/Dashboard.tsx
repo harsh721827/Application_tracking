@@ -12,11 +12,13 @@ import {
   ArrowRight,
   FileText,
 } from 'lucide-react';
-import type { Application } from '../lib/supabase';
+import type { Application, ApplicationStatus } from '../lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, SUBJECTS, NEXT_STAGE } from '../lib/stages';
 
 interface Props {
   apps: Application[];
+  onCardClick?: (group: 'in_progress' | 'approved' | 'rejected' | 'total') => void;
+  onStageClick?: (stage: ApplicationStatus) => void;
 }
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -33,7 +35,7 @@ const SUBJECT_DOTS: Record<string, string> = {
   'Minor Correction': 'bg-violet-500',
 };
 
-export default function Dashboard({ apps }: Props) {
+export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
   const stats = useMemo(() => {
     const total = apps.length;
     const inProgress = apps.filter(
@@ -150,10 +152,10 @@ export default function Dashboard({ apps }: Props) {
     <div className="space-y-5">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Total" value={stats.total} icon={<Layers size={18} />} tone="from-slate-700 to-slate-900" />
-        <KpiCard label="In Progress" value={stats.inProgress} icon={<Clock size={18} />} tone="from-amber-500 to-orange-500" />
-        <KpiCard label="Approved" value={stats.approved} icon={<CheckCircle2 size={18} />} tone="from-emerald-500 to-green-600" />
-        <KpiCard label="Rejected" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" />
+        <KpiCard label="Total" value={stats.total} icon={<Layers size={18} />} tone="from-slate-700 to-slate-900" onClick={onCardClick ? () => onCardClick('total') : undefined} />
+        <KpiCard label="In Progress" value={stats.inProgress} icon={<Clock size={18} />} tone="from-amber-500 to-orange-500" onClick={onCardClick ? () => onCardClick('in_progress') : undefined} />
+        <KpiCard label="Approved" value={stats.approved} icon={<CheckCircle2 size={18} />} tone="from-emerald-500 to-green-600" onClick={onCardClick ? () => onCardClick('approved') : undefined} />
+        <KpiCard label="Rejected" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" onClick={onCardClick ? () => onCardClick('rejected') : undefined} />
         <KpiCard label="Completion" value={`${stats.completionRate}%`} icon={<TrendingUp size={18} />} tone="from-sky-500 to-blue-600" />
         <KpiCard label="Rejection" value={`${stats.rejectionRate}%`} icon={<XCircle size={18} />} tone="from-rose-400 to-pink-500" />
       </div>
@@ -184,7 +186,12 @@ export default function Dashboard({ apps }: Props) {
         <Panel title="Stage Distribution" icon={<BarChart3 size={18} />} subtitle={`${stats.total} applications across ${STAGES.length} stages`}>
           <div className="space-y-2.5">
             {stats.stageCounts.map(({ stage, count }) => (
-              <div key={stage.id} className="group">
+              <button
+                key={stage.id}
+                onClick={onStageClick ? () => onStageClick(stage.id) : undefined}
+                disabled={!onStageClick || count === 0}
+                className="group block w-full text-left disabled:cursor-default"
+              >
                 <div className="mb-1 flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 font-medium text-slate-600">
                     <span className={`h-2 w-2 rounded-full ${stage.dot}`} />
@@ -198,7 +205,7 @@ export default function Dashboard({ apps }: Props) {
                     style={{ width: `${(count / maxStageCount) * 100}%` }}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </Panel>
@@ -453,14 +460,16 @@ function KpiCard({
   value,
   icon,
   tone,
+  onClick,
 }: {
   label: string;
   value: number | string;
   icon: React.ReactNode;
   tone: string;
+  onClick?: () => void;
 }) {
-  return (
-    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md">
+  const inner = (
+    <>
       <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full bg-gradient-to-br ${tone} opacity-10 transition group-hover:opacity-20`} />
       <div className="relative">
         <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${tone} text-white shadow-sm`}>
@@ -469,6 +478,21 @@ function KpiCard({
         <p className="text-xl font-bold text-slate-800">{value}</p>
         <p className="text-[11px] font-medium text-slate-400">{label}</p>
       </div>
+    </>
+  );
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:shadow-md hover:border-slate-300"
+      >
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md">
+      {inner}
     </div>
   );
 }

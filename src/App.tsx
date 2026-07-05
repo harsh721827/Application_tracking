@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, Filter, X } from 'lucide-react';
 import {
   supabase,
   type Application,
@@ -13,6 +13,11 @@ import Dashboard from './components/Dashboard';
 
 type View = 'board' | 'dashboard';
 
+type StatusFilter =
+  | { kind: 'group'; group: 'in_progress' | 'approved' | 'rejected' | 'total' }
+  | { kind: 'stage'; stage: ApplicationStatus }
+  | null;
+
 export default function App() {
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +29,7 @@ export default function App() {
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>('received');
   const [exportOpen, setExportOpen] = useState(false);
   const [view, setView] = useState<View>('board');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,9 +70,18 @@ export default function App() {
       (a.application_number ?? '').toLowerCase().includes(q) ||
       (a.subject ?? '').toLowerCase().includes(q) ||
       (a.notes ?? '').toLowerCase().includes(q);
-    const matchesWard =
-      wardFilter === 'all' || a.ward === wardFilter;
-    return matchesQuery && matchesWard;
+    const matchesWard = wardFilter === 'all' || a.ward === wardFilter;
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter.kind === 'group' &&
+        (statusFilter.group === 'total' ||
+          (statusFilter.group === 'in_progress' &&
+            a.status !== 'sent_to_approval' &&
+            a.status !== 'rejected') ||
+          (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
+          (statusFilter.group === 'rejected' && a.status === 'rejected'))) ||
+      (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
+    return matchesQuery && matchesWard && matchesStatus;
   });
 
   const byStatus = (status: ApplicationStatus) =>
@@ -223,10 +238,10 @@ export default function App() {
       <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
         {view === 'board' && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Total" value={total} tone="bg-slate-800" />
-            <StatCard label="In Progress" value={pending} tone="bg-amber-500" />
-            <StatCard label="Sent to Approval" value={approved} tone="bg-emerald-500" />
-            <StatCard label="Rejected" value={rejected} tone="bg-rose-500" />
+            <StatCard label="Total" value={total} tone="bg-slate-800" onClick={() => handleCardClick('total')} />
+            <StatCard label="In Progress" value={pending} tone="bg-amber-500" onClick={() => handleCardClick('in_progress')} />
+            <StatCard label="Sent to Approval" value={approved} tone="bg-emerald-500" onClick={() => handleCardClick('approved')} />
+            <StatCard label="Rejected" value={rejected} tone="bg-rose-500" onClick={() => handleCardClick('rejected')} />
           </div>
         )}
       </section>
@@ -240,6 +255,33 @@ export default function App() {
         </div>
       )}
 
+      {/* Active status filter indicator */}
+      {view === 'board' && statusFilter && (
+        <div className="mx-auto mt-4 flex max-w-[1600px] items-center gap-2 px-4 sm:px-6">
+          <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm">
+            <Filter size={14} className="text-slate-400" />
+            Filtered by:{' '}
+            <span className="font-semibold text-slate-800">
+              {statusFilter.kind === 'group'
+                ? statusFilter.group === 'total'
+                  ? 'All Applications'
+                  : statusFilter.group === 'in_progress'
+                    ? 'In Progress'
+                    : statusFilter.group === 'approved'
+                      ? 'Sent to Approval'
+                      : 'Rejected'
+                : STAGE_MAP[statusFilter.stage].label}
+            </span>
+            <button
+              onClick={() => setStatusFilter(null)}
+              className="ml-1 rounded-md p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="mx-auto max-w-[1600px] animate-fade-in px-4 py-5 sm:px-6">
         {loading ? (
@@ -250,7 +292,11 @@ export default function App() {
           apps.length === 0 ? (
             <EmptyState onNew={() => openNew('received')} />
           ) : (
-            <Dashboard apps={filtered} />
+            <Dashboard
+              apps={filtered}
+              onCardClick={handleCardClick}
+              onStageClick={handleStageClick}
+            />
           )
         ) : filtered.length === 0 ? (
           <EmptyState onNew={() => openNew('received')} />
@@ -341,13 +387,18 @@ function StatCard({
   label,
   value,
   tone,
+  onClick,
 }: {
   label: string;
   value: number;
   tone: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:shadow-md hover:border-slate-300"
+    >
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-lg ${tone} text-white`}
       >
@@ -359,7 +410,7 @@ function StatCard({
           {value} {value === 1 ? 'app' : 'apps'}
         </p>
       </div>
-    </div>
+    </button>
   );
 }
 
