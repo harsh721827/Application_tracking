@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare } from 'lucide-react';
 import {
   supabase,
   type Application,
@@ -9,6 +9,9 @@ import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE } from './lib/stages';
 // export utilities are dynamically imported on click to keep the bundle small
 import ApplicationCard from './components/ApplicationCard';
 import ApplicationModal from './components/ApplicationModal';
+import Dashboard from './components/Dashboard';
+
+type View = 'board' | 'dashboard';
 
 export default function App() {
   const [apps, setApps] = useState<Application[]>([]);
@@ -20,6 +23,7 @@ export default function App() {
   const [editing, setEditing] = useState<Application | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>('received');
   const [exportOpen, setExportOpen] = useState(false);
+  const [view, setView] = useState<View>('board');
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -129,6 +133,20 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+              <button
+                onClick={() => setView('board')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${view === 'board' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                <KanbanSquare size={15} /> Board
+              </button>
+              <button
+                onClick={() => setView('dashboard')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${view === 'dashboard' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                <BarChart3 size={15} /> Dashboard
+              </button>
+            </div>
             <div className="relative">
               <Search
                 size={15}
@@ -203,12 +221,14 @@ export default function App() {
 
       {/* Stats */}
       <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="Total" value={total} tone="bg-slate-800" />
-          <StatCard label="In Progress" value={pending} tone="bg-amber-500" />
-          <StatCard label="Sent to Approval" value={approved} tone="bg-emerald-500" />
-          <StatCard label="Rejected" value={rejected} tone="bg-rose-500" />
-        </div>
+        {view === 'board' && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard label="Total" value={total} tone="bg-slate-800" />
+            <StatCard label="In Progress" value={pending} tone="bg-amber-500" />
+            <StatCard label="Sent to Approval" value={approved} tone="bg-emerald-500" />
+            <StatCard label="Rejected" value={rejected} tone="bg-rose-500" />
+          </div>
+        )}
       </section>
 
       {/* Error */}
@@ -220,12 +240,18 @@ export default function App() {
         </div>
       )}
 
-      {/* Board */}
-      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">
+      {/* Main content */}
+      <main className="mx-auto max-w-[1600px] animate-fade-in px-4 py-5 sm:px-6">
         {loading ? (
           <div className="flex h-64 items-center justify-center text-slate-400">
             <Loader2 className="animate-spin" size={28} />
           </div>
+        ) : view === 'dashboard' ? (
+          apps.length === 0 ? (
+            <EmptyState onNew={() => openNew('received')} />
+          ) : (
+            <Dashboard apps={filtered} />
+          )
         ) : filtered.length === 0 ? (
           <EmptyState onNew={() => openNew('received')} />
         ) : (
@@ -236,7 +262,7 @@ export default function App() {
               return (
                 <div
                   key={stage.id}
-                  className="flex max-h-[calc(100vh-220px)] flex-col rounded-2xl border border-slate-200 bg-slate-100/60"
+                  className="flex max-h-[calc(100vh-220px)] animate-slide-up flex-col rounded-2xl border border-slate-200 bg-slate-100/60"
                 >
                   <div
                     className={`flex items-center justify-between rounded-t-2xl border-b-2 ${stage.ring} bg-white px-3 py-2.5`}
