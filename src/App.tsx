@@ -15,7 +15,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [deptFilter, setDeptFilter] = useState('all');
   const [wardFilter, setWardFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Application | null>(null);
@@ -53,10 +52,6 @@ export default function App() {
     load();
   }, [load]);
 
-  const departments = Array.from(
-    new Set(apps.map((a) => a.department).filter(Boolean) as string[])
-  ).sort();
-
   const filtered = apps.filter((a) => {
     const q = query.trim().toLowerCase();
     const matchesQuery =
@@ -65,11 +60,9 @@ export default function App() {
       (a.application_number ?? '').toLowerCase().includes(q) ||
       (a.subject ?? '').toLowerCase().includes(q) ||
       (a.notes ?? '').toLowerCase().includes(q);
-    const matchesDept =
-      deptFilter === 'all' || a.department === deptFilter;
     const matchesWard =
       wardFilter === 'all' || a.ward === wardFilter;
-    return matchesQuery && matchesDept && matchesWard;
+    return matchesQuery && matchesWard;
   });
 
   const byStatus = (status: ApplicationStatus) =>
@@ -148,18 +141,6 @@ export default function App() {
                 className="w-56 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
               />
             </div>
-            <select
-              value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-            >
-              <option value="all">All Departments</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
             <select
               value={wardFilter}
               onChange={(e) => setWardFilter(e.target.value)}

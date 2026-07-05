@@ -103,9 +103,9 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
             {app.application_number}
           </span>
         )}
-        {app.department && (
-          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600">
-            {app.department}
+        {app.subject && (
+          <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
+            {app.subject}
           </span>
         )}
       </div>

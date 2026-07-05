@@ -6,7 +6,7 @@ import {
   type ApplicationStatus,
   type ApplicationInsert,
 } from '../lib/supabase';
-import { STAGES, WARDS } from '../lib/stages';
+import { STAGES, WARDS, SUBJECTS } from '../lib/stages';
 
 interface Props {
   open: boolean;
@@ -20,7 +20,6 @@ const empty: ApplicationInsert = {
   applicant_name: '',
   application_number: '',
   subject: '',
-  department: '',
   ward: '',
   status: 'received',
   notes: '',
@@ -45,7 +44,6 @@ export default function ApplicationModal({
         applicant_name: initial.applicant_name,
         application_number: initial.application_number ?? '',
         subject: initial.subject ?? '',
-        department: initial.department ?? '',
         ward: initial.ward ?? '',
         status: initial.status,
         notes: initial.notes ?? '',
@@ -67,9 +65,32 @@ export default function ApplicationModal({
       setError('Applicant name is required.');
       return;
     }
+    if (!form.subject) {
+      setError('Please select a subject.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
+      // Check for duplicate application number (only if provided)
+      const appNum = (form.application_number ?? '').trim();
+      if (appNum) {
+        let query = supabase
+          .from('applications')
+          .select('id')
+          .eq('application_number', appNum);
+        if (initial) {
+          query = query.neq('id', initial.id);
+        }
+        const { data: existing, error: dupErr } = await query.maybeSingle();
+        if (dupErr) throw dupErr;
+        if (existing) {
+          setError('An application with this number already exists. Please use a unique number.');
+          setSaving(false);
+          return;
+        }
+      }
+
       if (initial) {
         const { error: e } = await supabase
           .from('applications')
@@ -139,48 +160,45 @@ export default function ApplicationModal({
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Application No.">
-              <input
-                value={form.application_number ?? ''}
-                onChange={(e) => update('application_number', e.target.value)}
-                className="input"
-                placeholder="e.g. APP-2026-001"
-              />
-            </Field>
-            <Field label="Department">
-              <input
-                value={form.department ?? ''}
-                onChange={(e) => update('department', e.target.value)}
-                className="input"
-                placeholder="e.g. Revenue"
-              />
-            </Field>
-          </div>
-
-          <Field label="Ward">
-            <select
-              value={form.ward ?? ''}
-              onChange={(e) => update('ward', e.target.value)}
-              className="input"
-            >
-              <option value="">— Select ward —</option>
-              {WARDS.map((w) => (
-                <option key={w} value={w}>
-                  {w}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Subject">
+          <Field label="Application No.">
             <input
-              value={form.subject ?? ''}
-              onChange={(e) => update('subject', e.target.value)}
+              value={form.application_number ?? ''}
+              onChange={(e) => update('application_number', e.target.value)}
               className="input"
-              placeholder="What is the application about?"
+              placeholder="e.g. APP-2026-001 (must be unique)"
             />
           </Field>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Ward">
+              <select
+                value={form.ward ?? ''}
+                onChange={(e) => update('ward', e.target.value)}
+                className="input"
+              >
+                <option value="">— Select ward —</option>
+                {WARDS.map((w) => (
+                  <option key={w} value={w}>
+                    {w}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Subject" required>
+              <select
+                value={form.subject ?? ''}
+                onChange={(e) => update('subject', e.target.value)}
+                className="input"
+              >
+                <option value="">— Select subject —</option>
+                {SUBJECTS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Status">

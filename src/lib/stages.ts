@@ -142,8 +142,18 @@ export const NEXT_STAGE: Partial<Record<ApplicationStatus, ApplicationStatus>> =
   received: 'spot',
   spot: 'lipik_sign_pending',
   lipik_sign_pending: 'karadhikari_sign_pending',
-  karadhikari_sign_pending: 'sent_to_approval',
-  correction_pending: 'lipik_sign_pending',
+  karadhikari_sign_pending: 'correction_pending',
+  correction_pending: 'noteshit_lipik_sign_pending',
   noteshit_lipik_sign_pending: 'noteshit_karadhikari_sign_pending',
   noteshit_karadhikari_sign_pending: 'sent_to_approval',
 };
+
+// Subject dropdown options
+export const SUBJECTS = [
+  'New Registration',
+  'Bhadekari',
+  'Wadhghat Durusti',
+  'Minor Correction',
+] as const;
+
+export type Subject = (typeof SUBJECTS)[number];
