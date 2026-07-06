@@ -62,6 +62,13 @@ export default function App() {
     load();
   }, [load]);
 
+  const allTotal = apps.length;
+  const allPending = apps.filter(
+    (a) => a.status !== 'sent_to_approval' && a.status !== 'rejected'
+  ).length;
+  const allApproved = apps.filter((a) => a.status === 'sent_to_approval').length;
+  const allRejected = apps.filter((a) => a.status === 'rejected').length;
+
   const filtered = apps.filter((a) => {
     const q = query.trim().toLowerCase();
     const matchesQuery =
@@ -87,13 +94,7 @@ export default function App() {
   const byStatus = (status: ApplicationStatus) =>
     filtered.filter((a) => a.status === status);
 
-  const total = filtered.length;
-  const pending = filtered.filter(
-    (a) =>
-      a.status !== 'sent_to_approval' && a.status !== 'rejected'
-  ).length;
-  const approved = filtered.filter((a) => a.status === 'sent_to_approval').length;
-  const rejected = filtered.filter((a) => a.status === 'rejected').length;
+
 
   const openNew = (status: ApplicationStatus = 'received') => {
     setEditing(null);
@@ -248,10 +249,10 @@ export default function App() {
       <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
         {view === 'board' && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Total" value={total} tone="bg-slate-800" onClick={() => handleCardClick('total')} />
-            <StatCard label="In Progress" value={pending} tone="bg-amber-500" onClick={() => handleCardClick('in_progress')} />
-            <StatCard label="Sent to Approval" value={approved} tone="bg-emerald-500" onClick={() => handleCardClick('approved')} />
-            <StatCard label="Rejected" value={rejected} tone="bg-rose-500" onClick={() => handleCardClick('rejected')} />
+            <StatCard label="Total" value={allTotal} tone="bg-slate-800" onClick={() => handleCardClick('total')} />
+            <StatCard label="In Progress" value={allPending} tone="bg-amber-500" onClick={() => handleCardClick('in_progress')} />
+            <StatCard label="Sent to Approval" value={allApproved} tone="bg-emerald-500" onClick={() => handleCardClick('approved')} />
+            <StatCard label="Rejected" value={allRejected} tone="bg-rose-500" onClick={() => handleCardClick('rejected')} />
           </div>
         )}
       </section>
@@ -303,7 +304,7 @@ export default function App() {
             <EmptyState onNew={() => openNew('received')} />
           ) : (
             <Dashboard
-              apps={filtered}
+              apps={apps}
               onCardClick={handleCardClick}
               onStageClick={handleStageClick}
             />

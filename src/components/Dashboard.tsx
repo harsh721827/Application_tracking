@@ -35,6 +35,24 @@ const SUBJECT_DOTS: Record<string, string> = {
   'Minor Correction': 'bg-violet-500',
 };
 
+const STROKE_COLORS: Record<string, string> = {
+  'bg-slate-500': '#64748b',
+  'bg-sky-500': '#0ea5e9',
+  'bg-cyan-500': '#06b6d4',
+  'bg-blue-500': '#3b82f6',
+  'bg-amber-500': '#f59e0b',
+  'bg-violet-500': '#8b5cf6',
+  'bg-indigo-500': '#6366f1',
+  'bg-emerald-500': '#10b981',
+  'bg-rose-500': '#f43f5e',
+  'bg-slate-300': '#cbd5e1',
+  'bg-slate-400': '#94a3b8',
+};
+
+function strokeFor(dot: string): string {
+  return STROKE_COLORS[dot] ?? '#64748b';
+}
+
 export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
   const stats = useMemo(() => {
     const total = apps.length;
@@ -229,7 +247,7 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
                       strokeWidth="10"
                       strokeDasharray={`${seg.dash} 251.2`}
                       strokeDashoffset={-seg.offset}
-                      className={seg.stage.dot.replace('bg-', 'stroke-')}
+                      stroke={strokeFor(seg.stage.dot)}
                       strokeLinecap="round"
                       style={{ transition: 'stroke-dasharray 0.7s ease-out' }}
                     />
@@ -305,7 +323,7 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
                         strokeWidth="10"
                         strokeDasharray={`${seg.dash} 251.2`}
                         strokeDashoffset={-seg.offset}
-                        className={seg.color.replace('bg-', 'stroke-')}
+                        stroke={strokeFor(seg.color)}
                         strokeLinecap="round"
                         style={{ transition: 'stroke-dasharray 0.7s ease-out' }}
                       />
@@ -509,7 +527,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="animate-slide-up rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="mb-4 flex items-center gap-2.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
           {icon}
