@@ -11,6 +11,8 @@ import {
   Clock,
   ArrowRight,
   FileText,
+  Grid3x3,
+  Timer,
 } from 'lucide-react';
 import type { Application, ApplicationStatus } from '../lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, SUBJECTS, NEXT_STAGE } from '../lib/stages';
@@ -106,6 +108,28 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
       .filter((s) => s.stage.id !== 'sent_to_approval' && s.stage.id !== 'rejected')
       .sort((a, b) => b.count - a.count)[0];
 
+    // Average processing time (received_date to now for in-progress, received_date to updated_at for completed)
+    const processedApps = apps.filter((a) => a.received_date && (a.status === 'sent_to_approval' || a.status === 'rejected'));
+    const avgProcessingDays = processedApps.length > 0
+      ? Math.round(processedApps.reduce((sum, a) => {
+          const start = new Date(a.received_date!).getTime();
+          const end = new Date(a.updated_at).getTime();
+          return sum + Math.max(0, (end - start) / 86400000);
+        }, 0) / processedApps.length)
+      : 0;
+
+    // Ward x Stage heatmap data
+    const activeWards = WARDS.filter((w) => apps.some((a) => a.ward === w));
+    const heatmap = activeWards.map((w) => ({
+      ward: w,
+      stages: STAGES.map((s) => ({
+        stage: s,
+        count: apps.filter((a) => a.ward === w && a.status === s.id).length,
+      })),
+      total: apps.filter((a) => a.ward === w).length,
+    }));
+    const maxCell = Math.max(1, ...heatmap.flatMap((h) => h.stages.map((s) => s.count)));
+
     return {
       total,
       inProgress,
@@ -119,6 +143,9 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
       unspecified,
       days,
       bottleneck,
+      avgProcessingDays,
+      heatmap,
+      maxCell,
     };
   }, [apps]);
 
@@ -176,6 +203,7 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
         <KpiCard label="Rejected" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" onClick={onCardClick ? () => onCardClick('rejected') : undefined} />
         <KpiCard label="Completion" value={`${stats.completionRate}%`} icon={<TrendingUp size={18} />} tone="from-sky-500 to-blue-600" />
         <KpiCard label="Rejection" value={`${stats.rejectionRate}%`} icon={<XCircle size={18} />} tone="from-rose-400 to-pink-500" />
+        <KpiCard label="Avg Days" value={stats.avgProcessingDays} icon={<Timer size={18} />} tone="from-slate-500 to-slate-700" />
       </div>
 
       {/* Bottleneck alert */}
@@ -469,6 +497,55 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
           ))}
         </div>
       </Panel>
+
+      {/* Ward x Stage Heatmap */}
+      {stats.heatmap.length > 0 && (
+        <Panel title="Ward × Stage Heatmap" icon={<Grid3x3 size={18} />} subtitle="Application density across wards and workflow stages">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="py-2 pr-3 text-left font-medium text-slate-500">Ward</th>
+                  {STAGES.map((s) => (
+                    <th key={s.id} className="px-1.5 py-2 text-center font-medium text-slate-500">
+                      <span className="flex flex-col items-center gap-1">
+                        <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                        <span className="whitespace-nowrap text-[10px]">{s.shortLabel}</span>
+                      </span>
+                    </th>
+                  ))}
+                  <th className="px-2 py-2 text-center font-semibold text-slate-700">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.heatmap.map((row) => (
+                  <tr key={row.ward} className="border-b border-slate-100 transition hover:bg-slate-50">
+                    <td className="py-1.5 pr-3 font-medium text-slate-700">{row.ward}</td>
+                    {row.stages.map(({ stage, count }) => {
+                      const intensity = count / stats.maxCell;
+                      const bg = count === 0
+                        ? 'bg-slate-50'
+                        : intensity > 0.66
+                          ? 'bg-slate-700 text-white'
+                          : intensity > 0.33
+                            ? 'bg-slate-400 text-white'
+                            : 'bg-slate-200 text-slate-700';
+                      return (
+                        <td key={stage.id} className="px-1 py-1 text-center">
+                          <span className={`inline-flex h-7 w-9 items-center justify-center rounded-md text-[11px] font-semibold transition ${bg}`} title={`${row.ward} — ${stage.shortLabel}: ${count}`}>
+                            {count > 0 ? count : ''}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td className="px-2 py-1.5 text-center font-bold text-slate-800">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
     </div>
   );
 }

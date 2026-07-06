@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { MoreVertical, Pencil, ArrowRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import type { Application, ApplicationStatus } from '../lib/supabase';
 import { STAGES, STAGE_MAP, NEXT_STAGE } from '../lib/stages';
@@ -16,6 +16,12 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
   const menuRef = useRef<HTMLDivElement>(null);
   const stage = STAGE_MAP[app.status];
   const nextStage = NEXT_STAGE[app.status];
+
+  const daysInStage = app.updated_at
+    ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / 86400000)
+    : 0;
+  const isStale = daysInStage >= 30 && app.status !== 'sent_to_approval' && app.status !== 'rejected';
+  const isWarning = daysInStage >= 7 && daysInStage < 30 && app.status !== 'sent_to_approval' && app.status !== 'rejected';
 
   useEffect(() => {
     if (!menuOpen && !moveOpen) return;
@@ -121,9 +127,21 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
           <span className={`h-1.5 w-1.5 rounded-full ${stage.dot}`} />
           {stage.shortLabel}
         </span>
-        {app.received_date && (
-          <span>{new Date(app.received_date).toLocaleDateString()}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {isStale && (
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 ring-1 ring-rose-200" title={`Stuck for ${daysInStage} days`}>
+              <AlertCircle size={9} /> {daysInStage}d
+            </span>
+          )}
+          {isWarning && (
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 ring-1 ring-amber-200" title={`In stage for ${daysInStage} days`}>
+              <Clock size={9} /> {daysInStage}d
+            </span>
+          )}
+          {app.received_date && (
+            <span>{new Date(app.received_date).toLocaleDateString()}</span>
+          )}
+        </div>
       </div>
 
       {nextStage && (

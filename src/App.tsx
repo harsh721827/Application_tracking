@@ -1,11 +1,13 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, Filter, X } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, Filter, X, ArrowDownUp } from 'lucide-react';
 import {
   supabase,
   type Application,
   type ApplicationStatus,
 } from './lib/supabase';
-import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE } from './lib/stages';
+import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE, SUBJECTS } from './lib/stages';
+
+type SortMode = 'newest' | 'oldest' | 'name';
 // export utilities are dynamically imported on click to keep the bundle small
 import ApplicationCard from './components/ApplicationCard';
 import ApplicationModal from './components/ApplicationModal';
@@ -24,6 +26,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [wardFilter, setWardFilter] = useState('all');
+  const [subjectFilter, setSubjectFilter] = useState('all');
+  const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Application | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>('received');
@@ -31,6 +35,7 @@ export default function App() {
   const [view, setView] = useState<View>('board');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!exportOpen) return;
@@ -62,6 +67,16 @@ export default function App() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.key === 'n') { e.preventDefault(); openNew('received'); }
+      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const allTotal = apps.length;
   const allPending = apps.filter(
     (a) => a.status !== 'sent_to_approval' && a.status !== 'rejected'
@@ -69,27 +84,36 @@ export default function App() {
   const allApproved = apps.filter((a) => a.status === 'sent_to_approval').length;
   const allRejected = apps.filter((a) => a.status === 'rejected').length;
 
-  const filtered = apps.filter((a) => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matchesQuery =
-      !q ||
-      a.applicant_name.toLowerCase().includes(q) ||
-      (a.application_number ?? '').toLowerCase().includes(q) ||
-      (a.subject ?? '').toLowerCase().includes(q) ||
-      (a.notes ?? '').toLowerCase().includes(q);
-    const matchesWard = wardFilter === 'all' || a.ward === wardFilter;
-    const matchesStatus =
-      !statusFilter ||
-      (statusFilter.kind === 'group' &&
-        (statusFilter.group === 'total' ||
-          (statusFilter.group === 'in_progress' &&
-            a.status !== 'sent_to_approval' &&
-            a.status !== 'rejected') ||
-          (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
-          (statusFilter.group === 'rejected' && a.status === 'rejected'))) ||
-      (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
-    return matchesQuery && matchesWard && matchesStatus;
-  });
+    const result = apps.filter((a) => {
+      const matchesQuery =
+        !q ||
+        a.applicant_name.toLowerCase().includes(q) ||
+        (a.application_number ?? '').toLowerCase().includes(q) ||
+        (a.subject ?? '').toLowerCase().includes(q) ||
+        (a.notes ?? '').toLowerCase().includes(q);
+      const matchesWard = wardFilter === 'all' || a.ward === wardFilter;
+      const matchesSubject = subjectFilter === 'all' ||
+        (subjectFilter === 'none' ? !a.subject || a.subject === '' : a.subject === subjectFilter);
+      const matchesStatus =
+        !statusFilter ||
+        (statusFilter.kind === 'group' &&
+          (statusFilter.group === 'total' ||
+            (statusFilter.group === 'in_progress' &&
+              a.status !== 'sent_to_approval' &&
+              a.status !== 'rejected') ||
+            (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
+            (statusFilter.group === 'rejected' && a.status === 'rejected'))) ||
+        (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
+      return matchesQuery && matchesWard && matchesSubject && matchesStatus;
+    });
+    const sorted = [...result];
+    if (sortMode === 'newest') sorted.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+    else if (sortMode === 'oldest') sorted.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''));
+    else if (sortMode === 'name') sorted.sort((a, b) => a.applicant_name.localeCompare(b.applicant_name));
+    return sorted;
+  }, [apps, query, wardFilter, subjectFilter, statusFilter, sortMode]);
 
   const byStatus = (status: ApplicationStatus) =>
     filtered.filter((a) => a.status === status);
@@ -179,9 +203,10 @@ export default function App() {
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <input
+                ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search applicant, subject, no…"
+                placeholder="Search… (press /)"
                 className="w-56 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
               />
             </div>
@@ -197,6 +222,31 @@ export default function App() {
                 </option>
               ))}
             </select>
+            <select
+              value={subjectFilter}
+              onChange={(e) => setSubjectFilter(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            >
+              <option value="all">All Subjects</option>
+              {SUBJECTS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+              <option value="none">No Subject</option>
+            </select>
+            <div className="relative">
+              <ArrowDownUp size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as SortMode)}
+                className="rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="name">Name A-Z</option>
+              </select>
+            </div>
             <div className="relative" ref={exportRef}>
               <button
                 onClick={() => setExportOpen((v) => !v)}
