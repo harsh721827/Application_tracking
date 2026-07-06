@@ -128,6 +128,16 @@ export default function App() {
     await move(id, next);
   };
 
+  const handleCardClick = (group: 'in_progress' | 'approved' | 'rejected' | 'total') => {
+    setStatusFilter({ kind: 'group', group });
+    setView('board');
+  };
+
+  const handleStageClick = (stage: ApplicationStatus) => {
+    setStatusFilter({ kind: 'stage', stage });
+    setView('board');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Header */}
