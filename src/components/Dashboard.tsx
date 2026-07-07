@@ -19,7 +19,7 @@ import { STAGES, STAGE_MAP, WARDS, SUBJECTS, NEXT_STAGE } from '../lib/stages';
 
 interface Props {
   apps: Application[];
-  onCardClick?: (group: 'in_progress' | 'approved' | 'rejected' | 'total') => void;
+  onCardClick?: (group: 'in_progress' | 'approved' | 'kayam' | 'total') => void;
   onStageClick?: (stage: ApplicationStatus) => void;
 }
 
@@ -46,6 +46,7 @@ const STROKE_COLORS: Record<string, string> = {
   'bg-violet-500': '#8b5cf6',
   'bg-indigo-500': '#6366f1',
   'bg-emerald-500': '#10b981',
+  'bg-green-500': '#22c55e',
   'bg-rose-500': '#f43f5e',
   'bg-slate-300': '#cbd5e1',
   'bg-slate-400': '#94a3b8',
@@ -59,9 +60,9 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
   const stats = useMemo(() => {
     const total = apps.length;
     const inProgress = apps.filter(
-      (a) => a.status !== 'sent_to_approval' && a.status !== 'rejected'
+      (a) => a.status !== 'sent_to_approval' && a.status !== 'approved' && a.status !== 'rejected'
     ).length;
-    const approved = apps.filter((a) => a.status === 'sent_to_approval').length;
+    const approved = apps.filter((a) => a.status === 'sent_to_approval' || a.status === 'approved').length;
     const rejected = apps.filter((a) => a.status === 'rejected').length;
     const completionRate = total > 0 ? Math.round((approved / total) * 100) : 0;
     const rejectionRate = total > 0 ? Math.round((rejected / total) * 100) : 0;
@@ -105,11 +106,11 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
     }
 
     const bottleneck = stageCounts
-      .filter((s) => s.stage.id !== 'sent_to_approval' && s.stage.id !== 'rejected')
+      .filter((s) => s.stage.id !== 'sent_to_approval' && s.stage.id !== 'approved' && s.stage.id !== 'rejected')
       .sort((a, b) => b.count - a.count)[0];
 
     // Average processing time (received_date to now for in-progress, received_date to updated_at for completed)
-    const processedApps = apps.filter((a) => a.received_date && (a.status === 'sent_to_approval' || a.status === 'rejected'));
+    const processedApps = apps.filter((a) => a.received_date && (a.status === 'sent_to_approval' || a.status === 'approved' || a.status === 'rejected'));
     const avgProcessingDays = processedApps.length > 0
       ? Math.round(processedApps.reduce((sum, a) => {
           const start = new Date(a.received_date!).getTime();
@@ -200,7 +201,7 @@ export default function Dashboard({ apps, onCardClick, onStageClick }: Props) {
         <KpiCard label="Total" value={stats.total} icon={<Layers size={18} />} tone="from-slate-700 to-slate-900" onClick={onCardClick ? () => onCardClick('total') : undefined} />
         <KpiCard label="In Progress" value={stats.inProgress} icon={<Clock size={18} />} tone="from-amber-500 to-orange-500" onClick={onCardClick ? () => onCardClick('in_progress') : undefined} />
         <KpiCard label="Approved" value={stats.approved} icon={<CheckCircle2 size={18} />} tone="from-emerald-500 to-green-600" onClick={onCardClick ? () => onCardClick('approved') : undefined} />
-        <KpiCard label="Rejected" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" onClick={onCardClick ? () => onCardClick('rejected') : undefined} />
+        <KpiCard label="कायम" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" onClick={onCardClick ? () => onCardClick('kayam') : undefined} />
         <KpiCard label="Completion" value={`${stats.completionRate}%`} icon={<TrendingUp size={18} />} tone="from-sky-500 to-blue-600" />
         <KpiCard label="Rejection" value={`${stats.rejectionRate}%`} icon={<XCircle size={18} />} tone="from-rose-400 to-pink-500" />
         <KpiCard label="Avg Days" value={stats.avgProcessingDays} icon={<Timer size={18} />} tone="from-slate-500 to-slate-700" />

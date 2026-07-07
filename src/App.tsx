@@ -16,7 +16,7 @@ import Dashboard from './components/Dashboard';
 type View = 'board' | 'dashboard';
 
 type StatusFilter =
-  | { kind: 'group'; group: 'in_progress' | 'approved' | 'rejected' | 'total' }
+  | { kind: 'group'; group: 'in_progress' | 'approved' | 'kayam' | 'total' }
   | { kind: 'stage'; stage: ApplicationStatus }
   | null;
 
@@ -79,10 +79,10 @@ export default function App() {
 
   const allTotal = apps.length;
   const allPending = apps.filter(
-    (a) => a.status !== 'sent_to_approval' && a.status !== 'rejected'
+    (a) => a.status !== 'sent_to_approval' && a.status !== 'approved' && a.status !== 'rejected'
   ).length;
-  const allApproved = apps.filter((a) => a.status === 'sent_to_approval').length;
-  const allRejected = apps.filter((a) => a.status === 'rejected').length;
+  const allApproved = apps.filter((a) => a.status === 'sent_to_approval' || a.status === 'approved').length;
+  const allKayam = apps.filter((a) => a.status === 'rejected').length;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -103,8 +103,8 @@ export default function App() {
             (statusFilter.group === 'in_progress' &&
               a.status !== 'sent_to_approval' &&
               a.status !== 'rejected') ||
-            (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
-            (statusFilter.group === 'rejected' && a.status === 'rejected'))) ||
+            (statusFilter.group === 'approved' && (a.status === 'sent_to_approval' || a.status === 'approved')) ||
+            (statusFilter.group === 'kayam' && a.status === 'rejected'))) ||
         (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
       return matchesQuery && matchesWard && matchesSubject && matchesStatus;
     });
@@ -153,7 +153,7 @@ export default function App() {
     await move(id, next);
   };
 
-  const handleCardClick = (group: 'in_progress' | 'approved' | 'rejected' | 'total') => {
+  const handleCardClick = (group: 'in_progress' | 'approved' | 'kayam' | 'total') => {
     setStatusFilter({ kind: 'group', group });
     setView('board');
   };
@@ -302,7 +302,7 @@ export default function App() {
             <StatCard label="Total" value={allTotal} tone="bg-slate-800" onClick={() => handleCardClick('total')} />
             <StatCard label="In Progress" value={allPending} tone="bg-amber-500" onClick={() => handleCardClick('in_progress')} />
             <StatCard label="Sent to Approval" value={allApproved} tone="bg-emerald-500" onClick={() => handleCardClick('approved')} />
-            <StatCard label="Rejected" value={allRejected} tone="bg-rose-500" onClick={() => handleCardClick('rejected')} />
+            <StatCard label="कायम" value={allKayam} tone="bg-rose-500" onClick={() => handleCardClick('kayam')} />
           </div>
         )}
       </section>
@@ -330,7 +330,7 @@ export default function App() {
                     ? 'In Progress'
                     : statusFilter.group === 'approved'
                       ? 'Sent to Approval'
-                      : 'Rejected'
+                      : 'कायम'
                 : STAGE_MAP[statusFilter.stage].label}
             </span>
             <button

@@ -8,6 +8,7 @@ import {
   StickyNote,
   NotebookPen,
   Send,
+  CheckCircle2,
   XCircle,
 } from 'lucide-react';
 
@@ -113,10 +114,21 @@ export const STAGES: StageConfig[] = [
     dot: 'bg-emerald-500',
   },
   {
+    id: 'approved',
+    label: 'Approved',
+    shortLabel: 'Approved',
+    description: 'Application approved',
+    icon: CheckCircle2,
+    accent: 'text-green-700',
+    badge: 'bg-green-100 text-green-700',
+    ring: 'border-green-300',
+    dot: 'bg-green-500',
+  },
+  {
     id: 'rejected',
-    label: 'Rejected',
-    shortLabel: 'Rejected',
-    description: 'Application rejected',
+    label: 'कायम',
+    shortLabel: 'कायम',
+    description: 'Application कायम',
     icon: XCircle,
     accent: 'text-rose-700',
     badge: 'bg-rose-100 text-rose-700',
@@ -146,6 +158,7 @@ export const NEXT_STAGE: Partial<Record<ApplicationStatus, ApplicationStatus>> =
   correction_pending: 'noteshit_lipik_sign_pending',
   noteshit_lipik_sign_pending: 'noteshit_karadhikari_sign_pending',
   noteshit_karadhikari_sign_pending: 'sent_to_approval',
+  sent_to_approval: 'approved',
 };
 
 // Subject dropdown options

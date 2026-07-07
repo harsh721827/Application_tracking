@@ -20,8 +20,8 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
   const daysInStage = app.updated_at
     ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / 86400000)
     : 0;
-  const isStale = daysInStage >= 30 && app.status !== 'sent_to_approval' && app.status !== 'rejected';
-  const isWarning = daysInStage >= 7 && daysInStage < 30 && app.status !== 'sent_to_approval' && app.status !== 'rejected';
+  const isStale = daysInStage >= 30 && app.status !== 'sent_to_approval' && app.status !== 'approved' && app.status !== 'rejected';
+  const isWarning = daysInStage >= 7 && daysInStage < 30 && app.status !== 'sent_to_approval' && app.status !== 'approved' && app.status !== 'rejected';
 
   useEffect(() => {
     if (!menuOpen && !moveOpen) return;

@@ -14,6 +14,7 @@ export type ApplicationStatus =
   | 'noteshit_lipik_sign_pending'
   | 'noteshit_karadhikari_sign_pending'
   | 'sent_to_approval'
+  | 'approved'
   | 'rejected';
 
 export interface Application {
