@@ -169,30 +169,30 @@ export default function App() {
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-800 text-white">
-              <LayoutGrid size={18} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-md">
+              <LayoutGrid size={20} />
             </div>
             <div>
-              <h1 className="text-lg font-semibold leading-tight text-slate-800">
+              <h1 className="text-lg font-bold leading-tight text-slate-800">
                 Application Tracking System
               </h1>
               <p className="text-xs text-slate-500">
-                Track applications across 9 workflow stages
+                Track applications across {STAGES.length} workflow stages
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm">
               <button
                 onClick={() => setView('board')}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${view === 'board' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${view === 'board' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <KanbanSquare size={15} /> Board
               </button>
               <button
                 onClick={() => setView('dashboard')}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${view === 'dashboard' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${view === 'dashboard' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <BarChart3 size={15} /> Dashboard
               </button>
@@ -207,13 +207,13 @@ export default function App() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search… (press /)"
-                className="w-56 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className="w-56 rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
               />
             </div>
             <select
               value={wardFilter}
               onChange={(e) => setWardFilter(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
             >
               <option value="all">All Wards</option>
               {WARDS.map((w) => (
@@ -225,7 +225,7 @@ export default function App() {
             <select
               value={subjectFilter}
               onChange={(e) => setSubjectFilter(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
             >
               <option value="all">All Subjects</option>
               {SUBJECTS.map((s) => (
@@ -240,7 +240,7 @@ export default function App() {
               <select
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className="rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
               >
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
@@ -251,12 +251,12 @@ export default function App() {
               <button
                 onClick={() => setExportOpen((v) => !v)}
                 disabled={apps.length === 0}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Download size={16} /> Export
               </button>
               {exportOpen && (
-                <div className="absolute right-0 top-10 z-40 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <div className="absolute right-0 top-11 z-40 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-in">
                   <button
                     onClick={() => {
                       import('./lib/export').then((m) => m.exportToExcel(filtered));
@@ -287,7 +287,7 @@ export default function App() {
             </div>
             <button
               onClick={() => openNew('received')}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-900"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:from-slate-900 hover:to-slate-950"
             >
               <Plus size={16} /> New Application
             </button>
@@ -299,10 +299,10 @@ export default function App() {
       <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
         {view === 'board' && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Total" value={allTotal} tone="bg-slate-800" onClick={() => handleCardClick('total')} />
-            <StatCard label="In Progress" value={allPending} tone="bg-amber-500" onClick={() => handleCardClick('in_progress')} />
-            <StatCard label="Sent to Approval" value={allApproved} tone="bg-emerald-500" onClick={() => handleCardClick('approved')} />
-            <StatCard label="कायम" value={allKayam} tone="bg-rose-500" onClick={() => handleCardClick('kayam')} />
+            <StatCard label="Total" value={allTotal} tone="from-slate-700 to-slate-900" onClick={() => handleCardClick('total')} />
+            <StatCard label="In Progress" value={allPending} tone="from-amber-500 to-orange-500" onClick={() => handleCardClick('in_progress')} />
+            <StatCard label="Sent to Approval" value={allApproved} tone="from-emerald-500 to-green-600" onClick={() => handleCardClick('approved')} />
+            <StatCard label="कायम" value={allKayam} tone="from-rose-500 to-red-600" onClick={() => handleCardClick('kayam')} />
           </div>
         )}
       </section>
@@ -369,14 +369,14 @@ export default function App() {
               return (
                 <div
                   key={stage.id}
-                  className="flex max-h-[calc(100vh-220px)] animate-slide-up flex-col rounded-2xl border border-slate-200 bg-slate-100/60"
+                  className="flex max-h-[calc(100vh-220px)] animate-slide-up flex-col rounded-2xl border border-slate-200 bg-slate-50/80 shadow-sm"
                 >
                   <div
                     className={`flex items-center justify-between rounded-t-2xl border-b-2 ${stage.ring} bg-white px-3 py-2.5`}
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${stage.badge}`}
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${stage.badge} transition group-hover:scale-110`}
                       >
                         <Icon size={15} />
                       </span>
@@ -384,12 +384,9 @@ export default function App() {
                         <p className="truncate text-sm font-semibold text-slate-800">
                           {stage.shortLabel}
                         </p>
-                        <p className="truncate text-[11px] text-slate-400">
-                          {stage.description}
-                        </p>
                       </div>
                     </div>
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${stage.badge}`}>
                       {items.length}
                     </span>
                   </div>
@@ -398,9 +395,9 @@ export default function App() {
                     {items.length === 0 ? (
                       <button
                         onClick={() => openNew(stage.id)}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-3 text-xs text-slate-400 transition hover:border-slate-400 hover:text-slate-600"
+                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 py-6 text-xs text-slate-400 transition hover:border-slate-400 hover:bg-white hover:text-slate-600"
                       >
-                        <Plus size={13} /> Add here
+                        <Plus size={16} /> Add application
                       </button>
                     ) : (
                       <>
@@ -415,7 +412,7 @@ export default function App() {
                         ))}
                         <button
                           onClick={() => openNew(stage.id)}
-                          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-2 text-xs text-slate-400 transition hover:border-slate-400 hover:text-slate-600"
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 py-2 text-xs text-slate-400 transition hover:border-slate-300 hover:bg-white hover:text-slate-500"
                         >
                           <Plus size={13} /> Add
                         </button>
@@ -458,19 +455,20 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:shadow-md hover:border-slate-300"
+      className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:shadow-md hover:border-slate-300"
     >
       <div
-        className={`flex h-10 w-10 items-center justify-center rounded-lg ${tone} text-white`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-sm`}
       >
-        <span className="text-base font-bold">{value}</span>
+        <span className="text-lg font-bold">{value}</span>
       </div>
-      <div>
-        <p className="text-xs text-slate-500">{label}</p>
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium text-slate-400">{label}</p>
         <p className="text-sm font-semibold text-slate-700">
           {value} {value === 1 ? 'app' : 'apps'}
         </p>
       </div>
+      <div className={`absolute -right-4 -top-4 h-16 w-16 rounded-full bg-gradient-to-br ${tone} opacity-5 transition group-hover:opacity-10`} />
     </button>
   );
 }
@@ -478,8 +476,8 @@ function StatCard({
 function EmptyState({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-        <Inbox size={26} />
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+        <Inbox size={28} />
       </div>
       <h3 className="mt-4 text-base font-semibold text-slate-700">
         No applications yet
@@ -490,7 +488,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
       </p>
       <button
         onClick={onNew}
-        className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-900"
+        className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-lg"
       >
         <Plus size={16} /> New Application
       </button>

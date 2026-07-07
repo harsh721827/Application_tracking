@@ -134,14 +134,19 @@ export default function ApplicationModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+      <div className="relative w-full max-w-lg animate-scale-in rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-800">
-            {initial ? 'Edit Application' : 'New Application'}
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-white">
+              {initial ? <Pencil size={15} /> : <Plus size={15} />}
+            </div>
+            <h2 className="text-lg font-semibold text-slate-800">
+              {initial ? 'Edit Application' : 'New Application'}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
@@ -263,7 +268,7 @@ export default function ApplicationModal({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-900 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-lg disabled:opacity-50"
             >
               <Save size={16} /> {saving ? 'Saving…' : 'Save'}
             </button>

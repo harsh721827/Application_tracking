@@ -568,7 +568,7 @@ function KpiCard({
     <>
       <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full bg-gradient-to-br ${tone} opacity-10 transition group-hover:opacity-20`} />
       <div className="relative">
-        <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${tone} text-white shadow-sm`}>
+        <div className={`mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-sm`}>
           {icon}
         </div>
         <p className="text-xl font-bold text-slate-800">{value}</p>
@@ -580,14 +580,14 @@ function KpiCard({
     return (
       <button
         onClick={onClick}
-        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:shadow-md hover:border-slate-300"
+        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition hover:shadow-md hover:border-slate-300"
       >
         {inner}
       </button>
     );
   }
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md">
+    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition hover:shadow-md">
       {inner}
     </div>
   );
@@ -607,7 +607,7 @@ function Panel({
   return (
     <div className="animate-slide-up rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="mb-4 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition group-hover:scale-105">
           {icon}
         </div>
         <div>
