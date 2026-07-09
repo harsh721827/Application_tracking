@@ -31,7 +31,4 @@ export interface Application {
   updated_at: string;
 }
 
-export type ApplicationInsert = Omit<
-  Application,
-  'id' | 'created_at' | 'updated_at'
->;
+export type ApplicationInsert = Omit<Application, 'id' | 'created_at' | 'updated_at'>;

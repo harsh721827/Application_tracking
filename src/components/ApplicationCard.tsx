@@ -18,8 +18,9 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
   const daysInStage = app.updated_at
     ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / 86400000)
     : 0;
-  const isStale = daysInStage >= 30 && app.status !== 'sent_to_approval' && app.status !== 'approved' && app.status !== 'rejected';
-  const isWarning = daysInStage >= 7 && daysInStage < 30 && app.status !== 'sent_to_approval' && app.status !== 'approved' && app.status !== 'rejected';
+  const isTerminal = app.status === 'sent_to_approval' || app.status === 'approved' || app.status === 'rejected';
+  const isStale = daysInStage >= 30 && !isTerminal;
+  const isWarning = daysInStage >= 7 && daysInStage < 30 && !isTerminal;
 
   return (
     <div
@@ -38,10 +39,7 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
           )}
         </div>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen((v) => !v);
-          }}
+          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
           className="shrink-0 rounded-md p-1 text-slate-300 transition hover:bg-slate-100 hover:text-slate-500"
         >
           <MoreVertical size={14} />
@@ -93,21 +91,14 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
 
       {nextStage && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onForward(app.id);
-          }}
+          onClick={(e) => { e.stopPropagation(); onForward(app.id); }}
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 py-1.5 text-[11px] font-medium text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700"
           title={`Advance to ${STAGE_MAP[nextStage].label}`}
         >
-          {stage.id === 'sent_to_approval' ? (
-            <>
-              <CheckCircle2 size={12} /> Approve
-            </>
+          {app.status === 'sent_to_approval' ? (
+            <><CheckCircle2 size={12} /> Approve</>
           ) : (
-            <>
-              <ArrowRight size={12} /> {STAGE_MAP[nextStage].shortLabel}
-            </>
+            <><ArrowRight size={12} /> {STAGE_MAP[nextStage].shortLabel}</>
           )}
         </button>
       )}
@@ -117,28 +108,18 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
           <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} />
           <div className="absolute right-2 top-10 z-20 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen(false);
-                onEdit(app);
-              }}
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEdit(app); }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50"
             >
               <Pencil size={13} /> Edit
             </button>
             <div className="my-1 border-t border-slate-100" />
-            <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-              Move to
-            </p>
+            <p className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">Move to</p>
             <div className="max-h-48 overflow-y-auto">
               {Object.values(STAGE_MAP).map((s) => (
                 <button
                   key={s.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    onMove(app.id, s.id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onMove(app.id, s.id); }}
                   className={`flex w-full items-center gap-2 px-3 py-1.5 text-xs transition hover:bg-slate-50 ${s.id === app.status ? 'font-semibold text-slate-800' : 'text-slate-600'}`}
                 >
                   <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />

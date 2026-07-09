@@ -1,16 +1,5 @@
 import type { ApplicationStatus } from './supabase';
-import {
-  Inbox,
-  Search,
-  FileSignature,
-  ShieldCheck,
-  AlertTriangle,
-  StickyNote,
-  NotebookPen,
-  Send,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react';
+import { Inbox, Search, Ligature as FileSignature, ShieldCheck, AlertTriangle, StickyNote, NotebookPen, Send, CheckCircle2, XCircle } from 'lucide-react';
 
 export interface StageConfig {
   id: ApplicationStatus;
@@ -18,10 +7,10 @@ export interface StageConfig {
   shortLabel: string;
   description: string;
   icon: typeof Inbox;
-  accent: string; // tailwind text color
-  badge: string; // tailwind bg color for badge
-  ring: string; // tailwind border color for column header
-  dot: string; // tailwind bg for status dot
+  accent: string;
+  badge: string;
+  ring: string;
+  dot: string;
 }
 
 export const STAGES: StageConfig[] = [
@@ -138,18 +127,12 @@ export const STAGES: StageConfig[] = [
 ];
 
 export const STAGE_MAP: Record<ApplicationStatus, StageConfig> = STAGES.reduce(
-  (acc, s) => {
-    acc[s.id] = s;
-    return acc;
-  },
+  (acc, s) => { acc[s.id] = s; return acc; },
   {} as Record<ApplicationStatus, StageConfig>
 );
 
-// Wards BMC1 .. BMC15
 export const WARDS: string[] = Array.from({ length: 15 }, (_, i) => `BMC${i + 1}`);
 
-// Auto-forward map: when a sign-pending stage is "done", it advances to the
-// next stage in the workflow. Stages not listed here have no automatic next step.
 export const NEXT_STAGE: Partial<Record<ApplicationStatus, ApplicationStatus>> = {
   received: 'spot',
   spot: 'lipik_sign_pending',
@@ -161,7 +144,6 @@ export const NEXT_STAGE: Partial<Record<ApplicationStatus, ApplicationStatus>> =
   sent_to_approval: 'approved',
 };
 
-// Subject dropdown options
 export const SUBJECTS = [
   'New Registration',
   'Bhadekari',
