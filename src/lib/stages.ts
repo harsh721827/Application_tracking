@@ -1,15 +1,5 @@
 import type { ApplicationStatus } from './supabase';
-import {
-  Inbox,
-  Search,
-  FileSignature,
-  ShieldCheck,
-  AlertTriangle,
-  StickyNote,
-  NotebookPen,
-  Send,
-  XCircle,
-} from 'lucide-react';
+import { Inbox, Search, Ligature as FileSignature, ShieldCheck, AlertTriangle, StickyNote, NotebookPen, Send, XCircle } from 'lucide-react';
 
 export interface StageConfig {
   id: ApplicationStatus;
@@ -21,7 +11,6 @@ export interface StageConfig {
   badge: string;
   ring: string;
   dot: string;
-  gradient: string;
 }
 
 export const STAGES: StageConfig[] = [
@@ -35,7 +24,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-slate-100 text-slate-700',
     ring: 'border-slate-300',
     dot: 'bg-slate-500',
-    gradient: 'from-slate-500 to-slate-600',
   },
   {
     id: 'spot',
@@ -47,7 +35,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-sky-100 text-sky-700',
     ring: 'border-sky-300',
     dot: 'bg-sky-500',
-    gradient: 'from-sky-500 to-sky-600',
   },
   {
     id: 'lipik_sign_pending',
@@ -59,7 +46,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-cyan-100 text-cyan-700',
     ring: 'border-cyan-300',
     dot: 'bg-cyan-500',
-    gradient: 'from-cyan-500 to-cyan-600',
   },
   {
     id: 'karadhikari_sign_pending',
@@ -71,7 +57,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-blue-100 text-blue-700',
     ring: 'border-blue-300',
     dot: 'bg-blue-500',
-    gradient: 'from-blue-500 to-blue-600',
   },
   {
     id: 'correction_pending',
@@ -83,7 +68,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-amber-100 text-amber-700',
     ring: 'border-amber-300',
     dot: 'bg-amber-500',
-    gradient: 'from-amber-500 to-orange-500',
   },
   {
     id: 'noteshit_lipik_sign_pending',
@@ -95,7 +79,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-violet-100 text-violet-700',
     ring: 'border-violet-300',
     dot: 'bg-violet-500',
-    gradient: 'from-violet-500 to-violet-600',
   },
   {
     id: 'noteshit_karadhikari_sign_pending',
@@ -107,7 +90,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-indigo-100 text-indigo-700',
     ring: 'border-indigo-300',
     dot: 'bg-indigo-500',
-    gradient: 'from-indigo-500 to-indigo-600',
   },
   {
     id: 'sent_to_approval',
@@ -119,7 +101,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-emerald-100 text-emerald-700',
     ring: 'border-emerald-300',
     dot: 'bg-emerald-500',
-    gradient: 'from-emerald-500 to-green-600',
   },
   {
     id: 'rejected',
@@ -131,7 +112,6 @@ export const STAGES: StageConfig[] = [
     badge: 'bg-rose-100 text-rose-700',
     ring: 'border-rose-300',
     dot: 'bg-rose-500',
-    gradient: 'from-rose-500 to-red-600',
   },
 ];
 
