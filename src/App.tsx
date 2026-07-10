@@ -83,9 +83,9 @@ export default function App() {
 
   const allTotal = apps.length;
   const allPending = apps.filter(
-    (a) => a.status !== 'sent_to_approval' && a.status !== 'approved' && a.status !== 'rejected'
+    (a) => a.status !== 'sent_to_approval' && a.status !== 'rejected'
   ).length;
-  const allApproved = apps.filter((a) => a.status === 'sent_to_approval' || a.status === 'approved').length;
+  const allApproved = apps.filter((a) => a.status === 'sent_to_approval').length;
   const allKayam = apps.filter((a) => a.status === 'rejected').length;
 
   const filtered = useMemo(() => {
@@ -106,9 +106,8 @@ export default function App() {
           (statusFilter.group === 'total' ||
             (statusFilter.group === 'in_progress' &&
               a.status !== 'sent_to_approval' &&
-              a.status !== 'approved' &&
               a.status !== 'rejected') ||
-            (statusFilter.group === 'approved' && (a.status === 'sent_to_approval' || a.status === 'approved')) ||
+            (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
             (statusFilter.group === 'kayam' && a.status === 'rejected'))) ||
         (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
       return matchesQuery && matchesWard && matchesSubject && matchesStatus;
@@ -140,7 +139,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
@@ -241,7 +239,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Stats */}
       {view === 'board' && (
         <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -253,7 +250,6 @@ export default function App() {
         </section>
       )}
 
-      {/* Active filter chip */}
       {statusFilter && (
         <div className="mx-auto max-w-[1600px] px-4 pt-3 sm:px-6">
           <div className="flex items-center gap-2">
@@ -276,7 +272,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Main content */}
       <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">
         {view === 'dashboard' ? (
           <Dashboard apps={filtered} onCardClick={handleCardClick} />

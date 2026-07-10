@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Pencil, ArrowRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle } from 'lucide-react';
 import type { Application } from '../lib/supabase';
 import { STAGE_MAP, NEXT_STAGE } from '../lib/stages';
 
@@ -18,7 +18,7 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
   const daysInStage = app.updated_at
     ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / 86400000)
     : 0;
-  const isTerminal = app.status === 'sent_to_approval' || app.status === 'approved' || app.status === 'rejected';
+  const isTerminal = app.status === 'sent_to_approval' || app.status === 'rejected';
   const isStale = daysInStage >= 30 && !isTerminal;
   const isWarning = daysInStage >= 7 && daysInStage < 30 && !isTerminal;
 
@@ -95,11 +95,7 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 py-1.5 text-[11px] font-medium text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700"
           title={`Advance to ${STAGE_MAP[nextStage].label}`}
         >
-          {app.status === 'sent_to_approval' ? (
-            <><CheckCircle2 size={12} /> Approve</>
-          ) : (
-            <><ArrowRight size={12} /> {STAGE_MAP[nextStage].shortLabel}</>
-          )}
+          <ArrowRight size={12} /> {STAGE_MAP[nextStage].shortLabel}
         </button>
       )}
 
