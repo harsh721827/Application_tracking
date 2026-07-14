@@ -1,15 +1,5 @@
 import type { ApplicationStatus } from './supabase';
-import {
-  Inbox,
-  Search,
-  FileSignature,
-  ShieldCheck,
-  AlertTriangle,
-  StickyNote,
-  NotebookPen,
-  Send,
-  XCircle,
-} from 'lucide-react';
+import { Inbox, Search, Ligature as FileSignature, ShieldCheck, AlertTriangle, StickyNote, NotebookPen, Send, XCircle } from 'lucide-react';
 
 export interface StageConfig {
   id: ApplicationStatus;
