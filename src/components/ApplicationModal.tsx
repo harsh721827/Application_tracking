@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, Save, Trash2, Plus, Pencil } from 'lucide-react';
+import { X, Save, Trash2, Plus, Pencil, Calendar, Tag, MapPin, FileText, User, Paperclip } from 'lucide-react';
 import { supabase, type Application, type ApplicationInsert } from '../lib/supabase';
-import { STAGES, WARDS, SUBJECTS } from '../lib/stages';
+import { STAGES, STAGE_MAP, WARDS, SUBJECTS } from '../lib/stages';
+import FileList from './FileList';
 
 interface Props {
   initial?: Application;
@@ -23,9 +24,12 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [savedId, setSavedId] = useState<string | undefined>(initial?.id);
 
   const set = (k: keyof ApplicationInsert, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  const currentStage = STAGE_MAP[form.status as Application['status']];
 
   const handleSave = async () => {
     if (!form.applicant_name.trim()) { setError('Applicant name is required.'); return; }
@@ -39,11 +43,18 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
       ward: form.ward || null,
       notes: form.notes || null,
     };
-    const { error: err } = initial
-      ? await supabase.from('applications').update(payload).eq('id', initial.id)
-      : await supabase.from('applications').insert(payload);
-    setSaving(false);
-    if (err) { setError(err.message); return; }
+    if (initial) {
+      const { error: err } = await supabase.from('applications').update(payload).eq('id', initial.id);
+      setSaving(false);
+      if (err) { setError(err.message); return; }
+    } else {
+      const { data, error: err } = await supabase.from('applications').insert(payload).select().single();
+      setSaving(false);
+      if (err) { setError(err.message); return; }
+      setSavedId(data.id);
+      onSaved();
+      return;
+    }
     onSaved();
   };
 
@@ -57,75 +68,121 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      <div className="relative w-full max-w-lg animate-scale-in rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800 text-white">
-              {initial ? <Pencil size={15} /> : <Plus size={15} />}
+      <div className="relative w-full max-w-lg animate-scale-in overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
+        {/* Header */}
+        <div className={`bg-gradient-to-br ${currentStage?.gradient ?? 'from-slate-700 to-slate-900'} px-6 py-5`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                {initial ? <Pencil size={18} className="text-white" /> : <Plus size={18} className="text-white" />}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  {initial ? 'Edit Application' : 'New Application'}
+                </h2>
+                <p className="text-xs text-white/70">
+                  {initial ? 'Update application details and files' : 'Create a new application entry'}
+                </p>
+              </div>
             </div>
-            <h2 className="text-lg font-semibold text-slate-800">
-              {initial ? 'Edit Application' : 'New Application'}
-            </h2>
+            <button onClick={onClose} className="rounded-lg p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white">
+              <X size={20} />
+            </button>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <X size={20} />
-          </button>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+        <div className="max-h-[55vh] overflow-y-auto px-6 py-5">
           {error && (
-            <div className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <div className="mb-4 animate-slide-up rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200">
               {error}
             </div>
           )}
           <div className="space-y-4">
-            <Field label="Applicant Name *">
+            <div>
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                <User size={13} /> Applicant Name *
+              </label>
               <input
                 value={form.applicant_name}
                 onChange={(e) => set('applicant_name', e.target.value)}
                 className="input"
                 placeholder="Full name"
+                autoFocus
               />
-            </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Application Number">
-                <input value={form.application_number ?? ''} onChange={(e) => set('application_number', e.target.value)} className="input" placeholder="Optional" />
-              </Field>
-              <Field label="Received Date">
-                <input type="date" value={form.received_date ?? ''} onChange={(e) => set('received_date', e.target.value)} className="input" />
-              </Field>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Subject">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <FileText size={13} /> Application Number
+                </label>
+                <input value={form.application_number ?? ''} onChange={(e) => set('application_number', e.target.value)} className="input" placeholder="Optional" />
+              </div>
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <Calendar size={13} /> Received Date
+                </label>
+                <input type="date" value={form.received_date ?? ''} onChange={(e) => set('received_date', e.target.value)} className="input" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <Tag size={13} /> Subject
+                </label>
                 <select value={form.subject ?? ''} onChange={(e) => set('subject', e.target.value)} className="input">
                   <option value="">Select subject</option>
                   {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-              </Field>
-              <Field label="Ward">
+              </div>
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <MapPin size={13} /> Ward
+                </label>
                 <select value={form.ward ?? ''} onChange={(e) => set('ward', e.target.value)} className="input">
                   <option value="">Select ward</option>
                   {WARDS.map((w) => <option key={w} value={w}>{w}</option>)}
                 </select>
-              </Field>
+              </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Department">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">Department</label>
                 <input value={form.department ?? ''} onChange={(e) => set('department', e.target.value)} className="input" placeholder="Optional" />
-              </Field>
-              <Field label="Status">
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">Status</label>
                 <select value={form.status} onChange={(e) => set('status', e.target.value)} className="input">
                   {STAGES.map((s) => <option key={s.id} value={s.id}>{s.shortLabel}</option>)}
                 </select>
-              </Field>
+              </div>
             </div>
-            <Field label="Notes">
-              <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} className="input min-h-[80px] resize-none" placeholder="Optional notes…" />
-            </Field>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">Notes</label>
+              <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} className="input min-h-[60px] resize-none" placeholder="Optional notes…" />
+            </div>
+
+            {/* File upload section */}
+            {savedId && (
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <Paperclip size={13} /> Attached Files
+                </label>
+                <FileList applicationId={savedId} />
+              </div>
+            )}
+            {!savedId && (
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs text-slate-400">
+                Save the application first to upload files
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
           {initial ? (
             <button onClick={handleDelete} disabled={saving} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:opacity-50">
               <Trash2 size={16} /> Delete
@@ -133,21 +190,12 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
           ) : <span />}
           <div className="flex gap-2">
             <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-lg disabled:opacity-50">
-              <Save size={16} /> {saving ? 'Saving…' : 'Save'}
+            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 px-4 py-2 text-sm font-medium text-white shadow-md transition hover:shadow-lg disabled:opacity-50 active:scale-[0.98]">
+              <Save size={16} /> {saving ? 'Saving…' : initial ? 'Save' : 'Create'}
             </button>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-600">{label}</label>
-      {children}
     </div>
   );
 }

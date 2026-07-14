@@ -10,6 +10,7 @@ import {
   FileText,
   Grid3x3,
   Timer,
+  Send,
 } from 'lucide-react';
 import type { Application } from '../lib/supabase';
 import { STAGES, WARDS } from '../lib/stages';
@@ -156,21 +157,20 @@ export default function Dashboard({ apps, onCardClick }: Props) {
   const subjectSegments = buildDonutSegments(subjectDonutData);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6">
+    <div className="mx-auto max-w-[1400px] space-y-5 p-4 sm:p-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label="Total" value={stats.total} icon={<FileText size={18} />} tone="from-slate-600 to-slate-800" onClick={onCardClick ? () => onCardClick('total') : undefined} />
         <KpiCard label="In Progress" value={stats.inProgress} icon={<Clock size={18} />} tone="from-amber-400 to-orange-500" onClick={onCardClick ? () => onCardClick('in_progress') : undefined} />
-        <KpiCard label="Sent to Approval" value={stats.approved} icon={<TrendingUp size={18} />} tone="from-emerald-500 to-green-600" onClick={onCardClick ? () => onCardClick('approved') : undefined} />
+        <KpiCard label="Sent to Approval" value={stats.approved} icon={<Send size={18} />} tone="from-emerald-500 to-green-600" onClick={onCardClick ? () => onCardClick('approved') : undefined} />
         <KpiCard label="कायम" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" onClick={onCardClick ? () => onCardClick('kayam') : undefined} />
         <KpiCard label="Completion" value={`${stats.completionRate}%`} icon={<TrendingUp size={18} />} tone="from-sky-500 to-blue-600" />
         <KpiCard label="Rejection" value={`${stats.rejectionRate}%`} icon={<XCircle size={18} />} tone="from-rose-400 to-pink-500" />
-        <KpiCard label="Avg Days" value={stats.avgProcessingDays} icon={<Timer size={18} />} tone="from-slate-500 to-slate-700" />
       </div>
 
       {stats.bottleneck && stats.bottleneck.count > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-            <Layers size={16} />
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 animate-slide-up">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <Layers size={18} />
           </div>
           <div>
             <p className="text-sm font-semibold text-amber-800">
@@ -183,7 +183,7 @@ export default function Dashboard({ apps, onCardClick }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Stage Distribution" icon={<BarChart3 size={18} />} subtitle={`${stats.total} applications across ${STAGES.length} stages`}>
           <div className="flex items-center gap-6">
             <div className="relative shrink-0">
@@ -223,10 +223,10 @@ export default function Dashboard({ apps, onCardClick }: Props) {
         <Panel title="Ward Distribution" icon={<MapPin size={18} />} subtitle={`${stats.wardCounts.length} wards with applications`}>
           <div className="space-y-2">
             {stats.wardCounts.slice(0, 8).map(({ ward, count }) => (
-              <div key={ward} className="flex items-center gap-2">
+              <div key={ward} className="group flex items-center gap-2">
                 <span className="w-12 text-xs font-medium text-slate-600">{ward}</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full rounded-full bg-gradient-to-r from-slate-600 to-slate-700 transition-all duration-700 ease-out" style={{ width: `${(count / maxWardCount) * 100}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-slate-600 to-slate-700 transition-all duration-700 ease-out group-hover:from-slate-700 group-hover:to-slate-800" style={{ width: `${(count / maxWardCount) * 100}%` }} />
                 </div>
                 <span className="w-6 text-right text-[11px] font-semibold text-slate-700">{count}</span>
               </div>
@@ -344,6 +344,18 @@ export default function Dashboard({ apps, onCardClick }: Props) {
           </div>
         </Panel>
       )}
+
+      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+          <Timer size={18} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Average Processing Time</p>
+          <p className="text-xs text-slate-500">
+            {stats.avgProcessingDays} day{stats.avgProcessingDays !== 1 ? 's' : ''} from received to terminal stage
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

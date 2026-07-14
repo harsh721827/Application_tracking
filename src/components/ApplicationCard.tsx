@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle } from 'lucide-react';
+import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle, Paperclip } from 'lucide-react';
 import type { Application } from '../lib/supabase';
 import { STAGE_MAP, NEXT_STAGE } from '../lib/stages';
 
 interface Props {
   app: Application;
+  fileCount?: number;
   onEdit: (app: Application) => void;
   onMove: (id: string, status: Application['status']) => void;
   onForward: (id: string) => void;
 }
 
-export default function ApplicationCard({ app, onEdit, onMove, onForward }: Props) {
+export default function ApplicationCard({ app, fileCount, onEdit, onMove, onForward }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const stage = STAGE_MAP[app.status];
   const nextStage = NEXT_STAGE[app.status];
@@ -27,7 +28,9 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
       onClick={() => onEdit(app)}
       className="group relative cursor-pointer rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b ${stage.gradient}`} />
+
+      <div className="flex items-start justify-between gap-2 pl-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-800">
             {app.applicant_name}
@@ -47,7 +50,7 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
       </div>
 
       {(app.subject || app.ward) && (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2 flex flex-wrap gap-1 pl-2">
           {app.subject && (
             <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
               {app.subject}
@@ -62,15 +65,20 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
       )}
 
       {app.notes && (
-        <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
+        <p className="mt-2 line-clamp-2 pl-2 text-[11px] leading-relaxed text-slate-400">
           {app.notes}
         </p>
       )}
 
-      <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+      <div className="mt-2.5 flex items-center justify-between pl-2 text-[11px] text-slate-400">
         <span className="inline-flex items-center gap-1">
           <span className={`h-1.5 w-1.5 rounded-full ${stage.dot}`} />
           {stage.shortLabel}
+          {fileCount != null && fileCount > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-slate-500" title={`${fileCount} attached file${fileCount !== 1 ? 's' : ''}`}>
+              <Paperclip size={10} /> {fileCount}
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-2">
           {isStale && (
@@ -92,7 +100,7 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
       {nextStage && (
         <button
           onClick={(e) => { e.stopPropagation(); onForward(app.id); }}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 py-1.5 text-[11px] font-medium text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700"
+          className="mt-2 ml-2 flex w-[calc(100%-0.5rem)] items-center justify-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 py-1.5 text-[11px] font-medium text-slate-500 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700 active:scale-[0.98]"
           title={`Advance to ${STAGE_MAP[nextStage].label}`}
         >
           <ArrowRight size={12} /> {STAGE_MAP[nextStage].shortLabel}
@@ -102,7 +110,7 @@ export default function ApplicationCard({ app, onEdit, onMove, onForward }: Prop
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} />
-          <div className="absolute right-2 top-10 z-20 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="absolute right-2 top-10 z-20 w-44 animate-scale-in rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onEdit(app); }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-50"

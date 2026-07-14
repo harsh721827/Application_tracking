@@ -30,4 +30,14 @@ export interface Application {
   updated_at: string;
 }
 
+export interface ApplicationFile {
+  id: string;
+  application_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string | null;
+  created_at: string;
+}
+
 export type ApplicationInsert = Omit<Application, 'id' | 'created_at' | 'updated_at'>;
