@@ -97,7 +97,6 @@ export default function FileList({ applicationId, onCountChange }: Props) {
 
   return (
     <div>
-      {/* Drop zone */}
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -144,7 +143,6 @@ export default function FileList({ applicationId, onCountChange }: Props) {
         </p>
       )}
 
-      {/* File list */}
       {loading ? (
         <div className="mt-3 flex items-center justify-center py-4">
           <Loader2 size={16} className="animate-spin text-slate-300" />

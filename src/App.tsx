@@ -15,6 +15,7 @@ type StatusFilter =
 export default function App() {
   const [apps, setApps] = useState<Application[]>([]);
   const [fileCounts, setFileCounts] = useState<Record<string, number>>({});
+  const [historyCounts, setHistoryCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('board');
   const [query, setQuery] = useState('');
@@ -47,6 +48,17 @@ export default function App() {
         counts[f.application_id] = (counts[f.application_id] ?? 0) + 1;
       });
       setFileCounts(counts);
+    }
+
+    const { data: histData } = await supabase
+      .from('status_history')
+      .select('application_id');
+    if (histData) {
+      const counts: Record<string, number> = {};
+      histData.forEach((h: { application_id: string }) => {
+        counts[h.application_id] = (counts[h.application_id] ?? 0) + 1;
+      });
+      setHistoryCounts(counts);
     }
   }, []);
 
@@ -83,6 +95,7 @@ export default function App() {
 
   const move = useCallback(async (id: string, status: ApplicationStatus) => {
     setApps((prev) => prev.map((a) => a.id === id ? { ...a, status } : a));
+    setHistoryCounts((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
     await supabase.from('applications').update({ status }).eq('id', id);
   }, []);
 
@@ -161,7 +174,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* Header */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
@@ -353,6 +365,7 @@ export default function App() {
                             key={app.id}
                             app={app}
                             fileCount={fileCounts[app.id]}
+                            historyCount={historyCounts[app.id]}
                             onEdit={openEdit}
                             onMove={move}
                             onForward={forward}

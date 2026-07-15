@@ -6,12 +6,13 @@ import { STAGE_MAP, NEXT_STAGE } from '../lib/stages';
 interface Props {
   app: Application;
   fileCount?: number;
+  historyCount?: number;
   onEdit: (app: Application) => void;
   onMove: (id: string, status: Application['status']) => void;
   onForward: (id: string) => void;
 }
 
-export default function ApplicationCard({ app, fileCount, onEdit, onMove, onForward }: Props) {
+export default function ApplicationCard({ app, fileCount, historyCount, onEdit, onMove, onForward }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const stage = STAGE_MAP[app.status];
   const nextStage = NEXT_STAGE[app.status];
@@ -77,6 +78,11 @@ export default function ApplicationCard({ app, fileCount, onEdit, onMove, onForw
           {fileCount != null && fileCount > 0 && (
             <span className="inline-flex items-center gap-0.5 text-slate-500" title={`${fileCount} attached file${fileCount !== 1 ? 's' : ''}`}>
               <Paperclip size={10} /> {fileCount}
+            </span>
+          )}
+          {historyCount != null && historyCount > 1 && (
+            <span className="inline-flex items-center gap-0.5 text-slate-500" title={`${historyCount} status transitions`}>
+              <ArrowRight size={9} /> {historyCount - 1}
             </span>
           )}
         </span>

@@ -40,4 +40,13 @@ export interface ApplicationFile {
   created_at: string;
 }
 
+export interface StatusHistoryEntry {
+  id: string;
+  application_id: string;
+  from_status: ApplicationStatus | null;
+  to_status: ApplicationStatus;
+  remark: string | null;
+  created_at: string;
+}
+
 export type ApplicationInsert = Omit<Application, 'id' | 'created_at' | 'updated_at'>;

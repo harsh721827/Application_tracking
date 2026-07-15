@@ -7,8 +7,7 @@ export async function uploadFile(
   file: File
 ): Promise<ApplicationFile | null> {
   const ext = file.name.split('.').pop() ?? '';
-  const uniqueName = `${applicationId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const filePath = `${uniqueName}`;
+  const filePath = `${applicationId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)

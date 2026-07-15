@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { X, Save, Trash2, Plus, Pencil, Calendar, Tag, MapPin, FileText, User, Paperclip } from 'lucide-react';
+import { X, Save, Trash2, Plus, Pencil, Calendar, Tag, MapPin, FileText, User, Paperclip, History, Clock } from 'lucide-react';
 import { supabase, type Application, type ApplicationInsert } from '../lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, SUBJECTS } from '../lib/stages';
 import FileList from './FileList';
+import StatusTimeline from './StatusTimeline';
 
 interface Props {
   initial?: Application;
@@ -10,6 +11,8 @@ interface Props {
   onClose: () => void;
   onSaved: () => void;
 }
+
+type Tab = 'details' | 'files' | 'history';
 
 export default function ApplicationModal({ initial, defaultStatus, onClose, onSaved }: Props) {
   const [form, setForm] = useState<ApplicationInsert>({
@@ -25,6 +28,8 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [savedId, setSavedId] = useState<string | undefined>(initial?.id);
+  const [activeTab, setActiveTab] = useState<Tab>('details');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const set = (k: keyof ApplicationInsert, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -47,11 +52,13 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
       const { error: err } = await supabase.from('applications').update(payload).eq('id', initial.id);
       setSaving(false);
       if (err) { setError(err.message); return; }
+      setHistoryRefreshKey((k) => k + 1);
     } else {
       const { data, error: err } = await supabase.from('applications').insert(payload).select().single();
       setSaving(false);
       if (err) { setError(err.message); return; }
       setSavedId(data.id);
+      setHistoryRefreshKey((k) => k + 1);
       onSaved();
       return;
     }
@@ -81,7 +88,7 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
                   {initial ? 'Edit Application' : 'New Application'}
                 </h2>
                 <p className="text-xs text-white/70">
-                  {initial ? 'Update application details and files' : 'Create a new application entry'}
+                  {initial ? 'Update details, files, and history' : 'Create a new application entry'}
                 </p>
               </div>
             </div>
@@ -91,95 +98,131 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
           </div>
         </div>
 
+        {/* Tabs (only for existing applications) */}
+        {savedId && (
+          <div className="flex border-b border-slate-200 bg-slate-50/50 px-6">
+            {([
+              { id: 'details' as const, label: 'Details', icon: Pencil },
+              { id: 'files' as const, label: 'Files', icon: Paperclip },
+              { id: 'history' as const, label: 'History', icon: History },
+            ]).map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition ${
+                    activeTab === tab.id
+                      ? 'border-slate-800 text-slate-800'
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <Icon size={14} /> {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="max-h-[55vh] overflow-y-auto px-6 py-5">
           {error && (
             <div className="mb-4 animate-slide-up rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200">
               {error}
             </div>
           )}
-          <div className="space-y-4">
+
+          {/* Details tab */}
+          {(!savedId || activeTab === 'details') && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <User size={13} /> Applicant Name *
+                </label>
+                <input
+                  value={form.applicant_name}
+                  onChange={(e) => set('applicant_name', e.target.value)}
+                  className="input"
+                  placeholder="Full name"
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <FileText size={13} /> Application Number
+                  </label>
+                  <input value={form.application_number ?? ''} onChange={(e) => set('application_number', e.target.value)} className="input" placeholder="Optional" />
+                </div>
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <Calendar size={13} /> Received Date
+                  </label>
+                  <input type="date" value={form.received_date ?? ''} onChange={(e) => set('received_date', e.target.value)} className="input" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <Tag size={13} /> Subject
+                  </label>
+                  <select value={form.subject ?? ''} onChange={(e) => set('subject', e.target.value)} className="input">
+                    <option value="">Select subject</option>
+                    {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <MapPin size={13} /> Ward
+                  </label>
+                  <select value={form.ward ?? ''} onChange={(e) => set('ward', e.target.value)} className="input">
+                    <option value="">Select ward</option>
+                    {WARDS.map((w) => <option key={w} value={w}>{w}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-600">Department</label>
+                  <input value={form.department ?? ''} onChange={(e) => set('department', e.target.value)} className="input" placeholder="Optional" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-600">Status</label>
+                  <select value={form.status} onChange={(e) => set('status', e.target.value)} className="input">
+                    {STAGES.map((s) => <option key={s.id} value={s.id}>{s.shortLabel}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">Notes</label>
+                <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} className="input min-h-[60px] resize-none" placeholder="Optional notes…" />
+              </div>
+
+              {!savedId && (
+                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs text-slate-400">
+                  Save the application first to upload files and view history
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Files tab */}
+          {savedId && activeTab === 'files' && (
+            <FileList applicationId={savedId} />
+          )}
+
+          {/* History tab */}
+          {savedId && activeTab === 'history' && (
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                <User size={13} /> Applicant Name *
-              </label>
-              <input
-                value={form.applicant_name}
-                onChange={(e) => set('applicant_name', e.target.value)}
-                className="input"
-                placeholder="Full name"
-                autoFocus
-              />
+              <div className="mb-3 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                <Clock size={13} /> Status transition timeline
+              </div>
+              <StatusTimeline applicationId={savedId} refreshKey={historyRefreshKey} />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <FileText size={13} /> Application Number
-                </label>
-                <input value={form.application_number ?? ''} onChange={(e) => set('application_number', e.target.value)} className="input" placeholder="Optional" />
-              </div>
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <Calendar size={13} /> Received Date
-                </label>
-                <input type="date" value={form.received_date ?? ''} onChange={(e) => set('received_date', e.target.value)} className="input" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <Tag size={13} /> Subject
-                </label>
-                <select value={form.subject ?? ''} onChange={(e) => set('subject', e.target.value)} className="input">
-                  <option value="">Select subject</option>
-                  {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <MapPin size={13} /> Ward
-                </label>
-                <select value={form.ward ?? ''} onChange={(e) => set('ward', e.target.value)} className="input">
-                  <option value="">Select ward</option>
-                  {WARDS.map((w) => <option key={w} value={w}>{w}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">Department</label>
-                <input value={form.department ?? ''} onChange={(e) => set('department', e.target.value)} className="input" placeholder="Optional" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">Status</label>
-                <select value={form.status} onChange={(e) => set('status', e.target.value)} className="input">
-                  {STAGES.map((s) => <option key={s.id} value={s.id}>{s.shortLabel}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-600">Notes</label>
-              <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} className="input min-h-[60px] resize-none" placeholder="Optional notes…" />
-            </div>
-
-            {/* File upload section */}
-            {savedId && (
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <Paperclip size={13} /> Attached Files
-                </label>
-                <FileList applicationId={savedId} />
-              </div>
-            )}
-            {!savedId && (
-              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs text-slate-400">
-                Save the application first to upload files
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
