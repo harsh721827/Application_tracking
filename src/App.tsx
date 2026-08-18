@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, X, ArrowDownUp } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, X, ArrowDownUp, Siren } from 'lucide-react';
 import { supabase, type Application, type ApplicationStatus } from './lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE, SUBJECTS } from './lib/stages';
 import ApplicationCard from './components/ApplicationCard';
@@ -9,7 +9,7 @@ import Dashboard from './components/Dashboard';
 type View = 'board' | 'dashboard';
 type SortMode = 'newest' | 'oldest' | 'name';
 type StatusFilter =
-  | { kind: 'group'; group: 'in_progress' | 'approved' | 'kayam' | 'total' }
+  | { kind: 'group'; group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' }
   | { kind: 'stage'; stage: ApplicationStatus };
 
 export default function App() {
@@ -113,6 +113,7 @@ export default function App() {
   ).length;
   const allApproved = apps.filter((a) => a.status === 'sent_to_approval').length;
   const allKayam = apps.filter((a) => a.status === 'rejected').length;
+  const allEmergency = apps.filter((a) => a.is_emergency).length;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -134,7 +135,8 @@ export default function App() {
               a.status !== 'sent_to_approval' &&
               a.status !== 'rejected') ||
             (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
-            (statusFilter.group === 'kayam' && a.status === 'rejected'))) ||
+            (statusFilter.group === 'kayam' && a.status === 'rejected') ||
+            (statusFilter.group === 'emergency' && a.is_emergency))) ||
         (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
       return matchesQuery && matchesWard && matchesSubject && matchesStatus;
     });
@@ -145,7 +147,7 @@ export default function App() {
     return sorted;
   }, [apps, query, wardFilter, subjectFilter, statusFilter, sortMode]);
 
-  const handleCardClick = (group: 'in_progress' | 'approved' | 'kayam' | 'total') => {
+  const handleCardClick = (group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency') => {
     setStatusFilter((prev) =>
       prev?.kind === 'group' && prev.group === group ? null : { kind: 'group', group }
     );
@@ -293,11 +295,12 @@ export default function App() {
 
       {view === 'board' && (
         <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <StatCard label="Total" value={allTotal} tone="from-slate-700 to-slate-900" icon={<Inbox size={16} />} onClick={() => handleCardClick('total')} />
             <StatCard label="In Progress" value={allPending} tone="from-amber-500 to-orange-500" icon={<Loader2 size={16} />} onClick={() => handleCardClick('in_progress')} />
             <StatCard label="Sent to Approval" value={allApproved} tone="from-emerald-500 to-green-600" icon={<BarChart3 size={16} />} onClick={() => handleCardClick('approved')} />
             <StatCard label="कायम" value={allKayam} tone="from-rose-500 to-red-600" icon={<X size={16} />} onClick={() => handleCardClick('kayam')} />
+            <StatCard label="Emergency" value={allEmergency} tone="from-red-500 to-rose-700" icon={<Siren size={16} />} onClick={() => handleCardClick('emergency')} />
           </div>
         </section>
       )}
@@ -314,7 +317,9 @@ export default function App() {
                     ? 'In Progress'
                     : statusFilter.group === 'approved'
                       ? 'Sent to Approval'
-                      : 'कायम'
+                      : statusFilter.group === 'emergency'
+                        ? 'Emergency'
+                        : 'कायम'
                 : STAGE_MAP[statusFilter.stage]?.shortLabel}
               <button onClick={() => setStatusFilter(null)} className="ml-1 rounded-full hover:text-slate-300">
                 <X size={12} />

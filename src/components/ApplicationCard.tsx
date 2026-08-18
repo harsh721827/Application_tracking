@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle, Paperclip } from 'lucide-react';
+import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle, Paperclip, Siren } from 'lucide-react';
 import type { Application } from '../lib/supabase';
 import { STAGE_MAP, NEXT_STAGE } from '../lib/stages';
 
@@ -27,9 +27,9 @@ export default function ApplicationCard({ app, fileCount, historyCount, onEdit, 
   return (
     <div
       onClick={() => onEdit(app)}
-      className="group relative cursor-pointer rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+      className={`group relative cursor-pointer rounded-xl border p-3 shadow-sm transition hover:shadow-md ${app.is_emergency ? 'border-rose-300 bg-rose-50/30 hover:border-rose-400' : 'border-slate-200 bg-white hover:border-slate-300'}`}
     >
-      <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b ${stage.gradient}`} />
+      <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b ${app.is_emergency ? 'from-rose-500 to-red-600' : stage.gradient}`} />
 
       <div className="flex items-start justify-between gap-2 pl-2">
         <div className="min-w-0 flex-1">
@@ -52,6 +52,11 @@ export default function ApplicationCard({ app, fileCount, historyCount, onEdit, 
 
       {(app.subject || app.ward) && (
         <div className="mt-2 flex flex-wrap gap-1 pl-2">
+          {app.is_emergency && (
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 ring-1 ring-rose-300" title={app.emergency_note ?? 'Emergency application'}>
+              <Siren size={9} /> EMERGENCY
+            </span>
+          )}
           {app.subject && (
             <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
               {app.subject}
@@ -68,6 +73,12 @@ export default function ApplicationCard({ app, fileCount, historyCount, onEdit, 
       {app.notes && (
         <p className="mt-2 line-clamp-2 pl-2 text-[11px] leading-relaxed text-slate-400">
           {app.notes}
+        </p>
+      )}
+
+      {app.is_emergency && app.emergency_note && (
+        <p className="mt-1.5 line-clamp-2 pl-2 text-[11px] font-medium leading-relaxed text-rose-600">
+          {app.emergency_note}
         </p>
       )}
 

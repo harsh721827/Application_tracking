@@ -25,6 +25,8 @@ export interface Application {
   ward: string | null;
   status: ApplicationStatus;
   notes: string | null;
+  is_emergency: boolean;
+  emergency_note: string | null;
   received_date: string | null;
   created_at: string;
   updated_at: string;
