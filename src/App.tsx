@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, X, ArrowDownUp, Siren } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, X, ArrowDownUp, Siren, Star, AlertTriangle, ChevronRight } from 'lucide-react';
 import { supabase, type Application, type ApplicationStatus } from './lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE, SUBJECTS } from './lib/stages';
 import ApplicationCard from './components/ApplicationCard';
@@ -9,7 +9,7 @@ import Dashboard from './components/Dashboard';
 type View = 'board' | 'dashboard';
 type SortMode = 'newest' | 'oldest' | 'name';
 type StatusFilter =
-  | { kind: 'group'; group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' }
+  | { kind: 'group'; group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' | 'important' }
   | { kind: 'stage'; stage: ApplicationStatus };
 
 export default function App() {
@@ -114,6 +114,13 @@ export default function App() {
   const allApproved = apps.filter((a) => a.status === 'sent_to_approval').length;
   const allKayam = apps.filter((a) => a.status === 'rejected').length;
   const allEmergency = apps.filter((a) => a.is_emergency).length;
+  const allImportant = apps.filter((a) => a.is_important).length;
+
+  const importantApps = useMemo(
+    () => apps.filter((a) => a.is_important && a.status !== 'sent_to_approval' && a.status !== 'rejected'),
+    [apps]
+  );
+  const [alertDismissed, setAlertDismissed] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -136,7 +143,8 @@ export default function App() {
               a.status !== 'rejected') ||
             (statusFilter.group === 'approved' && a.status === 'sent_to_approval') ||
             (statusFilter.group === 'kayam' && a.status === 'rejected') ||
-            (statusFilter.group === 'emergency' && a.is_emergency))) ||
+            (statusFilter.group === 'emergency' && a.is_emergency) ||
+            (statusFilter.group === 'important' && a.is_important))) ||
         (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
       return matchesQuery && matchesWard && matchesSubject && matchesStatus;
     });
@@ -147,7 +155,7 @@ export default function App() {
     return sorted;
   }, [apps, query, wardFilter, subjectFilter, statusFilter, sortMode]);
 
-  const handleCardClick = (group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency') => {
+  const handleCardClick = (group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' | 'important') => {
     setStatusFilter((prev) =>
       prev?.kind === 'group' && prev.group === group ? null : { kind: 'group', group }
     );
@@ -295,12 +303,46 @@ export default function App() {
 
       {view === 'board' && (
         <section className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
             <StatCard label="Total" value={allTotal} tone="from-slate-700 to-slate-900" icon={<Inbox size={16} />} onClick={() => handleCardClick('total')} />
             <StatCard label="In Progress" value={allPending} tone="from-amber-500 to-orange-500" icon={<Loader2 size={16} />} onClick={() => handleCardClick('in_progress')} />
             <StatCard label="Sent to Approval" value={allApproved} tone="from-emerald-500 to-green-600" icon={<BarChart3 size={16} />} onClick={() => handleCardClick('approved')} />
             <StatCard label="कायम" value={allKayam} tone="from-rose-500 to-red-600" icon={<X size={16} />} onClick={() => handleCardClick('kayam')} />
             <StatCard label="Emergency" value={allEmergency} tone="from-red-500 to-rose-700" icon={<Siren size={16} />} onClick={() => handleCardClick('emergency')} />
+            <StatCard label="Important" value={allImportant} tone="from-amber-500 to-orange-600" icon={<Star size={16} />} onClick={() => handleCardClick('important')} />
+          </div>
+        </section>
+      )}
+
+      {view === 'board' && importantApps.length > 0 && !alertDismissed && (
+        <section className="mx-auto max-w-[1600px] px-4 pt-3 sm:px-6">
+          <div className="animate-slide-up overflow-hidden rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+                <AlertTriangle size={18} className="animate-pulse" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-amber-800">
+                  {importantApps.length} important application{importantApps.length !== 1 ? 's' : ''} need to be done
+                </p>
+                <p className="truncate text-xs text-amber-600">
+                  {importantApps.slice(0, 3).map((a) => a.applicant_name).join(', ')}
+                  {importantApps.length > 3 && ` +${importantApps.length - 3} more`}
+                </p>
+              </div>
+              <button
+                onClick={() => handleCardClick('important')}
+                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-600 active:scale-[0.98]"
+              >
+                View all <ChevronRight size={14} />
+              </button>
+              <button
+                onClick={() => setAlertDismissed(true)}
+                className="rounded-lg p-1.5 text-amber-500 transition hover:bg-amber-100 hover:text-amber-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
         </section>
       )}
@@ -319,7 +361,9 @@ export default function App() {
                       ? 'Sent to Approval'
                       : statusFilter.group === 'emergency'
                         ? 'Emergency'
-                        : 'कायम'
+                        : statusFilter.group === 'important'
+                          ? 'Important'
+                          : 'कायम'
                 : STAGE_MAP[statusFilter.stage]?.shortLabel}
               <button onClick={() => setStatusFilter(null)} className="ml-1 rounded-full hover:text-slate-300">
                 <X size={12} />

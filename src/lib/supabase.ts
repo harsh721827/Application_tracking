@@ -27,6 +27,8 @@ export interface Application {
   notes: string | null;
   is_emergency: boolean;
   emergency_note: string | null;
+  is_important: boolean;
+  important_note: string | null;
   received_date: string | null;
   created_at: string;
   updated_at: string;

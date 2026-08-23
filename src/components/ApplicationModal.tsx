@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save, Trash2, Plus, Pencil, Calendar, Tag, MapPin, FileText, User, Paperclip, History, Clock, Siren } from 'lucide-react';
+import { X, Save, Trash2, Plus, Pencil, Calendar, Tag, MapPin, FileText, User, Paperclip, History, Clock, Siren, Star } from 'lucide-react';
 import { supabase, type Application, type ApplicationInsert } from '../lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, SUBJECTS } from '../lib/stages';
 import FileList from './FileList';
@@ -25,6 +25,8 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
     notes: initial?.notes ?? '',
     is_emergency: initial?.is_emergency ?? false,
     emergency_note: initial?.emergency_note ?? '',
+    is_important: initial?.is_important ?? false,
+    important_note: initial?.important_note ?? '',
     received_date: initial?.received_date ?? new Date().toISOString().slice(0, 10),
   });
   const [saving, setSaving] = useState(false);
@@ -51,6 +53,8 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
       notes: form.notes || null,
       is_emergency: form.is_emergency,
       emergency_note: form.emergency_note || null,
+      is_important: form.is_important,
+      important_note: form.important_note || null,
     };
     if (initial) {
       const { error: err } = await supabase.from('applications').update(payload).eq('id', initial.id);
@@ -203,6 +207,37 @@ export default function ApplicationModal({ initial, defaultStatus, onClose, onSa
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">Notes</label>
                 <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} className="input min-h-[60px] resize-none" placeholder="Optional notes…" />
+              </div>
+
+              {/* Important section */}
+              <div className={`rounded-xl border p-3 transition ${form.is_important ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, is_important: !p.is_important }))}
+                  className="flex w-full items-center gap-2"
+                >
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${form.is_important ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                    <Star size={15} />
+                  </span>
+                  <div className="flex-1 text-left">
+                    <p className={`text-sm font-semibold ${form.is_important ? 'text-amber-700' : 'text-slate-600'}`}>Important — Needs to Be Done</p>
+                    <p className="text-[11px] text-slate-400">Flag this application as important so it shows an alert on the board</p>
+                  </div>
+                  <span className={`relative h-5 w-9 rounded-full transition ${form.is_important ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${form.is_important ? 'left-4' : 'left-0.5'}`} />
+                  </span>
+                </button>
+                {form.is_important && (
+                  <div className="mt-3 animate-slide-up">
+                    <label className="mb-1 block text-[11px] font-medium text-amber-600">Important Note</label>
+                    <textarea
+                      value={form.important_note ?? ''}
+                      onChange={(e) => set('important_note', e.target.value)}
+                      className="input min-h-[50px] resize-none border-amber-200 bg-white"
+                      placeholder="Describe what needs to be done and why it's important…"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Emergency section */}

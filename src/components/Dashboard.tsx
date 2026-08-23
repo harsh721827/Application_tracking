@@ -12,13 +12,14 @@ import {
   Timer,
   Send,
   Siren,
+  Star,
 } from 'lucide-react';
 import type { Application } from '../lib/supabase';
 import { STAGES, WARDS } from '../lib/stages';
 
 interface Props {
   apps: Application[];
-  onCardClick?: (group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency') => void;
+  onCardClick?: (group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' | 'important') => void;
 }
 
 const SUBJECT_DOTS: Record<string, string> = {
@@ -56,6 +57,7 @@ export default function Dashboard({ apps, onCardClick }: Props) {
     const approved = apps.filter((a) => a.status === 'sent_to_approval').length;
     const rejected = apps.filter((a) => a.status === 'rejected').length;
     const emergency = apps.filter((a) => a.is_emergency).length;
+    const important = apps.filter((a) => a.is_important).length;
 
     const completionRate = total > 0 ? Math.round((approved / total) * 100) : 0;
     const rejectionRate = total > 0 ? Math.round((rejected / total) * 100) : 0;
@@ -118,7 +120,7 @@ export default function Dashboard({ apps, onCardClick }: Props) {
     const maxCell = Math.max(1, ...heatmap.flatMap((h) => h.stages.map((s) => s.count)));
 
     return {
-      total, inProgress, approved, rejected, emergency,
+      total, inProgress, approved, rejected, emergency, important,
       completionRate, rejectionRate,
       stageCounts, wardCounts, subjectCounts, unspecified,
       days, bottleneck, avgProcessingDays, heatmap, maxCell,
@@ -160,12 +162,13 @@ export default function Dashboard({ apps, onCardClick }: Props) {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 p-4 sm:p-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-8">
         <KpiCard label="Total" value={stats.total} icon={<FileText size={18} />} tone="from-slate-600 to-slate-800" onClick={onCardClick ? () => onCardClick('total') : undefined} />
         <KpiCard label="In Progress" value={stats.inProgress} icon={<Clock size={18} />} tone="from-amber-400 to-orange-500" onClick={onCardClick ? () => onCardClick('in_progress') : undefined} />
         <KpiCard label="Sent to Approval" value={stats.approved} icon={<Send size={18} />} tone="from-emerald-500 to-green-600" onClick={onCardClick ? () => onCardClick('approved') : undefined} />
         <KpiCard label="कायम" value={stats.rejected} icon={<XCircle size={18} />} tone="from-rose-500 to-red-600" onClick={onCardClick ? () => onCardClick('kayam') : undefined} />
         <KpiCard label="Emergency" value={stats.emergency} icon={<Siren size={18} />} tone="from-red-500 to-rose-700" onClick={onCardClick ? () => onCardClick('emergency') : undefined} />
+        <KpiCard label="Important" value={stats.important} icon={<Star size={18} />} tone="from-amber-500 to-orange-600" onClick={onCardClick ? () => onCardClick('important') : undefined} />
         <KpiCard label="Completion" value={`${stats.completionRate}%`} icon={<TrendingUp size={18} />} tone="from-sky-500 to-blue-600" />
         <KpiCard label="Rejection" value={`${stats.rejectionRate}%`} icon={<XCircle size={18} />} tone="from-rose-400 to-pink-500" />
       </div>
