@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, X, ArrowDownUp, Siren, Star, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Loader2, Inbox, Download, FileSpreadsheet, BarChart3, KanbanSquare, X, ArrowDownUp, Siren, Star, AlertTriangle, ChevronRight, Upload } from 'lucide-react';
 import { supabase, type Application, type ApplicationStatus } from './lib/supabase';
 import { STAGES, STAGE_MAP, WARDS, NEXT_STAGE, SUBJECTS } from './lib/stages';
+import { exportToExcel, exportToCSV } from './lib/export';
 import ApplicationCard from './components/ApplicationCard';
 import ApplicationModal from './components/ApplicationModal';
+import ImportModal from './components/ImportModal';
 import Dashboard from './components/Dashboard';
 
 type View = 'board' | 'dashboard';
@@ -27,6 +29,7 @@ export default function App() {
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>('received');
   const [statusFilter, setStatusFilter] = useState<StatusFilter | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -241,6 +244,13 @@ export default function App() {
               </select>
             </div>
 
+            <button
+              onClick={() => setImportOpen(true)}
+              className="btn-ghost"
+            >
+              <Upload size={16} /> <span className="hidden sm:inline">Import</span>
+            </button>
+
             <div className="relative" ref={exportRef}>
               <button
                 onClick={() => setExportOpen((v) => !v)}
@@ -252,13 +262,13 @@ export default function App() {
               {exportOpen && (
                 <div className="absolute right-0 top-11 z-40 w-48 animate-scale-in rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                   <button
-                    onClick={() => { import('./lib/export').then((m) => m.exportToExcel(filtered)); setExportOpen(false); }}
+                    onClick={() => { exportToExcel(filtered); setExportOpen(false); }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
                   >
                     <FileSpreadsheet size={15} className="text-emerald-600" /> Excel (.xlsx)
                   </button>
                   <button
-                    onClick={() => { import('./lib/export').then((m) => m.exportToCSV(filtered)); setExportOpen(false); }}
+                    onClick={() => { exportToCSV(filtered); setExportOpen(false); }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
                   >
                     <Download size={15} className="text-slate-500" /> CSV (.csv)
@@ -442,6 +452,13 @@ export default function App() {
           defaultStatus={defaultStatus}
           onClose={() => setModalOpen(false)}
           onSaved={() => { setModalOpen(false); load(); }}
+        />
+      )}
+
+      {importOpen && (
+        <ImportModal
+          onClose={() => setImportOpen(false)}
+          onDone={() => { setImportOpen(false); load(); }}
         />
       )}
     </div>
