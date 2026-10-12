@@ -13,6 +13,7 @@ export type ApplicationStatus =
   | 'correction_pending'
   | 'noteshit_lipik_sign_pending'
   | 'noteshit_karadhikari_sign_pending'
+  | 'kar_vibhag_pramukh_sign_pending'
   | 'sent_to_approval'
   | 'rejected';
 

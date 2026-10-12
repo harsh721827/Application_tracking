@@ -1,5 +1,5 @@
 import type { ApplicationStatus } from './supabase';
-import { Inbox, Search, Ligature as FileSignature, ShieldCheck, AlertTriangle, StickyNote, NotebookPen, Send, XCircle } from 'lucide-react';
+import { Inbox, Search, Ligature as FileSignature, ShieldCheck, AlertTriangle, StickyNote, NotebookPen, Send, XCircle, FileCheck2 } from 'lucide-react';
 
 export interface StageConfig {
   id: ApplicationStatus;
@@ -100,6 +100,18 @@ export const STAGES: StageConfig[] = [
     gradient: 'from-indigo-500 to-indigo-600',
   },
   {
+    id: 'kar_vibhag_pramukh_sign_pending',
+    label: 'कर विभाग प्रमुख सही करिता दिले',
+    shortLabel: 'कर विभाग प्रमुख',
+    description: 'कर विभाग प्रमुख सही करिता दिले',
+    icon: FileCheck2,
+    accent: 'text-teal-700',
+    badge: 'bg-teal-100 text-teal-700',
+    ring: 'border-teal-300',
+    dot: 'bg-teal-500',
+    gradient: 'from-teal-500 to-teal-600',
+  },
+  {
     id: 'sent_to_approval',
     label: 'Sent to Approval',
     shortLabel: 'Sent to Approval',
@@ -139,7 +151,8 @@ export const NEXT_STAGE: Partial<Record<ApplicationStatus, ApplicationStatus>> =
   karadhikari_sign_pending: 'correction_pending',
   correction_pending: 'noteshit_lipik_sign_pending',
   noteshit_lipik_sign_pending: 'noteshit_karadhikari_sign_pending',
-  noteshit_karadhikari_sign_pending: 'sent_to_approval',
+  noteshit_karadhikari_sign_pending: 'kar_vibhag_pramukh_sign_pending',
+  kar_vibhag_pramukh_sign_pending: 'sent_to_approval',
 };
 
 export const SUBJECTS = [
