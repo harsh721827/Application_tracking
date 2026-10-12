@@ -69,6 +69,27 @@ const HEADER_ALIASES: Record<string, string> = {
   'sign pend clerk': 'sign_pend_clerk',
   'signpendadmin': 'sign_pend_admin',
   'sign pend admin': 'sign_pend_admin',
+
+  // Marathi column names
+  'अ.क्र': 'sr_no',
+  'अ.क्र.': 'sr_no',
+  'वार्ड क्र': 'ward',
+  'वार्ड क्र.': 'ward',
+  'वार्डक्र': 'ward',
+  'मालमत्ता क्र': 'prop_no',
+  'मालमत्ता क्र.': 'prop_no',
+  'मालमत्ताक्र': 'prop_no',
+  'भाग क्र': 'part_no',
+  'भाग क्र.': 'part_no',
+  'भागक्र': 'part_no',
+  'अर्ज क्र': 'application_number',
+  'अर्ज क्र.': 'application_number',
+  'अर्जक्र': 'application_number',
+  'अर्ज नोंदविल्याची तारीख': 'received_date',
+  'अर्ज नोंद करून झालेले दिवस': 'days_since',
+  'अर्जाचा प्रकार': 'subject',
+  'अर्जाची स्थिती': 'status',
+  'शेरा': 'notes',
 };
 
 function normalizeHeader(h: string): string {
@@ -80,10 +101,26 @@ function parseBoolean(val: unknown): boolean {
   if (typeof val === 'number') return val !== 0;
   if (typeof val === 'string') {
     const v = val.trim().toLowerCase();
-    return v === 'yes' || v === 'true' || v === '1' || v === 'y' || v === 'done' || v === 'pending';
+    return v === 'yes' || v === 'true' || v === '1' || v === 'y' || v === 'done' || v === 'pending' || v === 'होय';
   }
   return false;
 }
+
+const MARATHI_STATUS_MAP: Record<string, ApplicationStatus> = {
+  'प्राप्त': 'received',
+  'प्राप्त झालेला': 'received',
+  'स्पॉट': 'spot',
+  'स्पॉट पूर्ण': 'spot',
+  'लिपिक स्वाक्षरी थांबवा': 'lipik_sign_pending',
+  'लिपिक स्वाक्षरी प्रलंबित': 'lipik_sign_pending',
+  'कारधारी स्वाक्षरी प्रलंबित': 'karadhikari_sign_pending',
+  'कारधारी स्वाक्षरी थांबवा': 'karadhikari_sign_pending',
+  'दुरुस्ती प्रलंबित': 'correction_pending',
+  'नोटशीट लिपिक स्वाक्षरी प्रलंबित': 'noteshit_lipik_sign_pending',
+  'नोटशीट कारधारी स्वाक्षरी प्रलंबित': 'noteshit_karadhikari_sign_pending',
+  'मंजुरीसाठी पाठवले': 'sent_to_approval',
+  'कायम': 'rejected',
+};
 
 function parseStatusFromFlags(
   statusVal: unknown,
@@ -94,6 +131,10 @@ function parseStatusFromFlags(
   // If explicit status column exists and matches a stage, use it
   if (typeof statusVal === 'string') {
     const v = statusVal.trim().toLowerCase();
+    // Check Marathi status names first
+    const marathiMatch = MARATHI_STATUS_MAP[statusVal.trim()];
+    if (marathiMatch) return marathiMatch;
+
     for (const stage of Object.values(STAGE_MAP)) {
       if (
         stage.label.toLowerCase() === v ||
@@ -155,8 +196,8 @@ function buildNotes(
   const prop = String(propNo ?? '').trim();
   const part = String(partNo ?? '').trim();
   const notes = String(baseNotes ?? '').trim();
-  if (prop) parts.push(`Prop No: ${prop}`);
-  if (part) parts.push(`Part No: ${part}`);
+  if (prop) parts.push(`मालमत्ता क्र: ${prop}`);
+  if (part) parts.push(`भाग क्र: ${part}`);
   if (notes) parts.push(notes);
   return parts.length > 0 ? parts.join(' · ') : null;
 }
@@ -165,16 +206,16 @@ export async function downloadTemplate(): Promise<void> {
   const XLSX = await import('xlsx');
   const data = [
     {
-      'Sr.No': 1,
-      'WardNo': 'BMC5',
-      'PropNo': '123',
-      'PartNo': '2',
-      'App_InwordNo': '2026/001',
-      'InwordDate': '2026-01-15',
-      'NameOfHolder': 'Ramesh Patil',
-      'SpotDone': 'No',
-      'SignPendClerk': 'No',
-      'SignPendAdmin': 'No',
+      'अ.क्र': 1,
+      'वार्ड क्र': 'BMC5',
+      'मालमत्ता क्र': '123',
+      'भाग क्र': '2',
+      'अर्ज क्र': '2026/001',
+      'अर्ज नोंदविल्याची तारीख': '2026-01-15',
+      'अर्ज नोंद करून झालेले दिवस': 0,
+      'अर्जाचा प्रकार': 'नवीन नोंदणी',
+      'अर्जाची स्थिती': 'प्राप्त',
+      'शेरा': '',
     },
   ];
   const ws = XLSX.utils.json_to_sheet(data);
@@ -207,8 +248,11 @@ export async function parseFile(file: File): Promise<ImportRow[]> {
       row[canonical] = raw[originalKey];
     });
 
+    // Use applicant_name if available, otherwise fall back to application_number as the name
     const name = String(row['applicant_name'] ?? '').trim();
-    if (!name) {
+    const appNum = String(row['application_number'] ?? '').trim() || null;
+
+    if (!name && !appNum) {
       return {
         rowNumber: idx + 2,
         applicant_name: '',
@@ -226,8 +270,8 @@ export async function parseFile(file: File): Promise<ImportRow[]> {
 
     return {
       rowNumber: idx + 2,
-      applicant_name: name,
-      application_number: String(row['application_number'] ?? '').trim() || null,
+      applicant_name: name || `अर्ज ${appNum}`,
+      application_number: appNum,
       subject: validateSubject(row['subject']),
       ward: validateWard(row['ward']),
       status: parseStatusFromFlags(
@@ -256,7 +300,7 @@ export async function importRows(
   const valid = rows.filter((r) => r.applicant_name.trim());
   const invalid = rows.filter((r) => !r.applicant_name.trim());
   invalid.forEach((r) =>
-    skipped.push({ row: r.rowNumber, message: 'Missing applicant name (NameOfHolder)' })
+    skipped.push({ row: r.rowNumber, message: 'Missing both name and application number' })
   );
 
   const BATCH = 100;

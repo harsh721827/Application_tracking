@@ -133,22 +133,22 @@ export default function ImportModal({ onClose, onDone }: Props) {
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                  <FileSpreadsheet size={14} /> Your Excel format
+                  <FileSpreadsheet size={14} /> तुमचा एक्सेल फॉर्मॅट
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className="border-b border-slate-200">
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">Sr.No</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">WardNo</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">PropNo</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">PartNo</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">App_InwordNo</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">InwordDate</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">NameOfHolder</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">SpotDone</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">SignPendClerk</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">SignPendAdmin</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अ.क्र</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">वार्ड क्र</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">मालमत्ता क्र</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">भाग क्र</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्ज क्र</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्ज नोंदविल्याची तारीख</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्ज नोंद करून झालेले दिवस</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्जाचा प्रकार</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्जाची स्थिती</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">शेरा</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -159,21 +159,22 @@ export default function ImportModal({ onClose, onDone }: Props) {
                         <td className="px-2 py-1">2</td>
                         <td className="px-2 py-1">2026/001</td>
                         <td className="px-2 py-1">2026-01-15</td>
-                        <td className="px-2 py-1">Ramesh Patil</td>
-                        <td className="px-2 py-1">Yes</td>
-                        <td className="px-2 py-1">No</td>
-                        <td className="px-2 py-1">No</td>
+                        <td className="px-2 py-1">0</td>
+                        <td className="px-2 py-1">नवीन नोंदणी</td>
+                        <td className="px-2 py-1">प्राप्त</td>
+                        <td className="px-2 py-1">—</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
                 <div className="mt-3 space-y-1 text-[11px] text-slate-500">
-                  <p><span className="font-medium text-slate-700">NameOfHolder</span> — required (becomes applicant name)</p>
-                  <p><span className="font-medium text-slate-700">WardNo</span> — e.g. BMC5 or just 5 (auto-adds BMC prefix)</p>
-                  <p><span className="font-medium text-slate-700">PropNo + PartNo</span> — saved into the Notes field</p>
-                  <p><span className="font-medium text-slate-700">App_InwordNo</span> — becomes the application number</p>
-                  <p><span className="font-medium text-slate-700">InwordDate</span> — becomes the received date</p>
-                  <p><span className="font-medium text-slate-700">SpotDone / SignPendClerk / SignPendAdmin</span> — Yes/No flags that auto-set the board status</p>
+                  <p><span className="font-medium text-slate-700">अर्ज क्र</span> — required (becomes application number & name)</p>
+                  <p><span className="font-medium text-slate-700">वार्ड क्र</span> — e.g. BMC5 or just 5 (auto-adds BMC prefix)</p>
+                  <p><span className="font-medium text-slate-700">मालमत्ता क्र + भाग क्र</span> — saved into the Notes field</p>
+                  <p><span className="font-medium text-slate-700">अर्ज नोंदविल्याची तारीख</span> — becomes the received date</p>
+                  <p><span className="font-medium text-slate-700">अर्जाचा प्रकार</span> — becomes the subject (e.g. नवीन नोंदणी, भाडेकरी, वधगत दुरुस्ती, छोटी दुरुस्ती)</p>
+                  <p><span className="font-medium text-slate-700">अर्जाची स्थिती</span> — sets the board status (प्राप्त, स्पॉट, कायम, etc.)</p>
+                  <p><span className="font-medium text-slate-700">शेरा</span> — saved as remarks</p>
                 </div>
                 <button
                   onClick={handleDownloadTemplate}
@@ -230,7 +231,7 @@ export default function ImportModal({ onClose, onDone }: Props) {
 
               {rows.filter((r) => !r.applicant_name).length > 0 && (
                 <p className="text-xs text-amber-600">
-                  {rows.filter((r) => !r.applicant_name).length} row(s) will be skipped (missing NameOfHolder).
+                  {rows.filter((r) => !r.applicant_name).length} row(s) will be skipped (missing both name and application number).
                 </p>
               )}
             </div>
