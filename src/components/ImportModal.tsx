@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Upload, FileSpreadsheet, X, CheckCircle2, AlertCircle, Loader2, Download, FileDown } from 'lucide-react';
 import { parseFile, importRows, type ImportRow, type ImportResult } from '../lib/import';
-import { exportToExcel } from '../lib/export';
+import { downloadTemplate } from '../lib/import';
 
 interface Props {
   onClose: () => void;
@@ -51,8 +51,8 @@ export default function ImportModal({ onClose, onDone }: Props) {
     }
   };
 
-  const downloadTemplate = () => {
-    exportToExcel([]);
+  const handleDownloadTemplate = () => {
+    downloadTemplate();
   };
 
   const reset = () => {
@@ -133,22 +133,50 @@ export default function ImportModal({ onClose, onDone }: Props) {
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                  <FileSpreadsheet size={14} /> Expected columns
+                  <FileSpreadsheet size={14} /> Your Excel format
                 </p>
-                <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-500">
-                  <li><span className="font-medium text-slate-700">Applicant Name</span> — required</li>
-                  <li>Application Number — optional</li>
-                  <li>Subject — optional</li>
-                  <li>Ward — optional (BMC1–BMC15)</li>
-                  <li>Status — optional (defaults to Received)</li>
-                  <li>Department — optional</li>
-                  <li>Received Date — optional</li>
-                  <li>Notes — optional</li>
-                  <li>Emergency — optional (yes/no)</li>
-                  <li>Important — optional (yes/no)</li>
-                </ul>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">Sr.No</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">WardNo</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">PropNo</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">PartNo</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">App_InwordNo</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">InwordDate</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">NameOfHolder</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">SpotDone</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">SignPendClerk</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">SignPendAdmin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-slate-100 text-slate-400">
+                        <td className="px-2 py-1">1</td>
+                        <td className="px-2 py-1">BMC5</td>
+                        <td className="px-2 py-1">123</td>
+                        <td className="px-2 py-1">2</td>
+                        <td className="px-2 py-1">2026/001</td>
+                        <td className="px-2 py-1">2026-01-15</td>
+                        <td className="px-2 py-1">Ramesh Patil</td>
+                        <td className="px-2 py-1">Yes</td>
+                        <td className="px-2 py-1">No</td>
+                        <td className="px-2 py-1">No</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-3 space-y-1 text-[11px] text-slate-500">
+                  <p><span className="font-medium text-slate-700">NameOfHolder</span> — required (becomes applicant name)</p>
+                  <p><span className="font-medium text-slate-700">WardNo</span> — e.g. BMC5 or just 5 (auto-adds BMC prefix)</p>
+                  <p><span className="font-medium text-slate-700">PropNo + PartNo</span> — saved into the Notes field</p>
+                  <p><span className="font-medium text-slate-700">App_InwordNo</span> — becomes the application number</p>
+                  <p><span className="font-medium text-slate-700">InwordDate</span> — becomes the received date</p>
+                  <p><span className="font-medium text-slate-700">SpotDone / SignPendClerk / SignPendAdmin</span> — Yes/No flags that auto-set the board status</p>
+                </div>
                 <button
-                  onClick={downloadTemplate}
+                  onClick={handleDownloadTemplate}
                   className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition hover:text-slate-800"
                 >
                   <FileDown size={13} /> Download a template
@@ -202,7 +230,7 @@ export default function ImportModal({ onClose, onDone }: Props) {
 
               {rows.filter((r) => !r.applicant_name).length > 0 && (
                 <p className="text-xs text-amber-600">
-                  {rows.filter((r) => !r.applicant_name).length} row(s) will be skipped (missing applicant name).
+                  {rows.filter((r) => !r.applicant_name).length} row(s) will be skipped (missing NameOfHolder).
                 </p>
               )}
             </div>
