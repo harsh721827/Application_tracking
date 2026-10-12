@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle, Paperclip, Siren, Star } from 'lucide-react';
+import { MoreVertical, Pencil, ArrowRight, Clock, AlertCircle, Paperclip, Siren, Star, FileCheck2 } from 'lucide-react';
 import type { Application } from '../lib/supabase';
 import { STAGE_MAP, NEXT_STAGE } from '../lib/stages';
 
@@ -23,6 +23,8 @@ export default function ApplicationCard({ app, fileCount, historyCount, onEdit, 
   const isTerminal = app.status === 'sent_to_approval' || app.status === 'rejected';
   const isStale = daysInStage >= 30 && !isTerminal;
   const isWarning = daysInStage >= 7 && daysInStage < 30 && !isTerminal;
+  const hasKarVibhagPramukh = app.status === 'noteshit_karadhikari_sign_pending'
+    && !!app.notes && app.notes.includes('कर विभाग प्रमुख सही करिता दिले');
 
   return (
     <div
@@ -60,6 +62,11 @@ export default function ApplicationCard({ app, fileCount, historyCount, onEdit, 
           {app.is_important && (
             <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-300" title={app.important_note ?? 'Important application'}>
               <Star size={9} /> IMPORTANT
+            </span>
+          )}
+          {hasKarVibhagPramukh && (
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-700 ring-1 ring-teal-300" title="कर विभाग प्रमुख सही करिता दिले">
+              <FileCheck2 size={9} /> कर विभाग प्रमुख
             </span>
           )}
           {app.subject && (

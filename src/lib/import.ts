@@ -118,8 +118,6 @@ const MARATHI_STATUS_MAP: Record<string, ApplicationStatus> = {
   'दुरुस्ती प्रलंबित': 'correction_pending',
   'नोटशीट लिपिक स्वाक्षरी प्रलंबित': 'noteshit_lipik_sign_pending',
   'नोटशीट कारधारी स्वाक्षरी प्रलंबित': 'noteshit_karadhikari_sign_pending',
-  'कर विभाग प्रमुख सही करिता दिले': 'kar_vibhag_pramukh_sign_pending',
-  'कर विभाग प्रमुख': 'kar_vibhag_pramukh_sign_pending',
   'मंजुरीसाठी पाठवले': 'sent_to_approval',
   'कायम': 'rejected',
 };
