@@ -9,7 +9,7 @@ import ImportModal from './components/ImportModal';
 import Dashboard from './components/Dashboard';
 
 type View = 'board' | 'dashboard';
-type SortMode = 'newest' | 'oldest' | 'name';
+type SortMode = 'newest' | 'oldest' | 'name' | 'received_date' | 'app_number' | 'days_stuck' | 'priority';
 type StatusFilter =
   | { kind: 'group'; group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' | 'important' }
   | { kind: 'stage'; stage: ApplicationStatus };
@@ -31,6 +31,7 @@ export default function App() {
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [stuckOnly, setStuckOnly] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -149,14 +150,42 @@ export default function App() {
             (statusFilter.group === 'emergency' && a.is_emergency) ||
             (statusFilter.group === 'important' && a.is_important))) ||
         (statusFilter.kind === 'stage' && a.status === statusFilter.stage);
-      return matchesQuery && matchesWard && matchesSubject && matchesStatus;
+      const matchesStuck = !stuckOnly ||
+        (a.updated_at &&
+          Math.floor((Date.now() - new Date(a.updated_at).getTime()) / 86400000) >= 7 &&
+          a.status !== 'sent_to_approval' && a.status !== 'rejected');
+      return matchesQuery && matchesWard && matchesSubject && matchesStatus && matchesStuck;
     });
     const sorted = [...result];
-    if (sortMode === 'newest') sorted.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
-    else if (sortMode === 'oldest') sorted.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''));
-    else sorted.sort((a, b) => a.applicant_name.localeCompare(b.applicant_name));
+    const priorityRank = (a: Application) => {
+      if (a.is_emergency) return 0;
+      if (a.is_important) return 1;
+      return 2;
+    };
+    const daysStuck = (a: Application) => {
+      if (!a.updated_at) return 0;
+      return Math.floor((Date.now() - new Date(a.updated_at).getTime()) / 86400000);
+    };
+    if (sortMode === 'newest')
+      sorted.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+    else if (sortMode === 'oldest')
+      sorted.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''));
+    else if (sortMode === 'name')
+      sorted.sort((a, b) => a.applicant_name.localeCompare(b.applicant_name));
+    else if (sortMode === 'received_date')
+      sorted.sort((a, b) => (b.received_date ?? '').localeCompare(a.received_date ?? ''));
+    else if (sortMode === 'app_number')
+      sorted.sort((a, b) => (a.application_number ?? '').localeCompare(b.application_number ?? '', undefined, { numeric: true }));
+    else if (sortMode === 'days_stuck')
+      sorted.sort((a, b) => daysStuck(b) - daysStuck(a));
+    else if (sortMode === 'priority')
+      sorted.sort((a, b) => {
+        const r = priorityRank(a) - priorityRank(b);
+        if (r !== 0) return r;
+        return daysStuck(b) - daysStuck(a);
+      });
     return sorted;
-  }, [apps, query, wardFilter, subjectFilter, statusFilter, sortMode]);
+  }, [apps, query, wardFilter, subjectFilter, statusFilter, sortMode, stuckOnly]);
 
   const handleCardClick = (group: 'in_progress' | 'approved' | 'kayam' | 'total' | 'emergency' | 'important') => {
     setStatusFilter((prev) =>
@@ -165,13 +194,14 @@ export default function App() {
     setView('board');
   };
 
-  const hasActiveFilters = wardFilter !== 'all' || subjectFilter !== 'all' || query.trim() !== '';
+  const hasActiveFilters = wardFilter !== 'all' || subjectFilter !== 'all' || query.trim() !== '' || stuckOnly;
 
   const clearFilters = () => {
     setWardFilter('all');
     setSubjectFilter('all');
     setQuery('');
     setStatusFilter(null);
+    setStuckOnly(false);
   };
 
   if (loading) {
@@ -241,6 +271,10 @@ export default function App() {
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
                 <option value="name">Name A-Z</option>
+                <option value="received_date">Received Date</option>
+                <option value="app_number">App Number</option>
+                <option value="days_stuck">Days Stuck</option>
+                <option value="priority">Priority</option>
               </select>
             </div>
 
@@ -301,6 +335,12 @@ export default function App() {
                 {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
                 <option value="none">No Subject</option>
               </select>
+              <button
+                onClick={() => setStuckOnly((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition ${stuckOnly ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                <AlertTriangle size={14} /> Stuck 7+ days
+              </button>
               {hasActiveFilters && (
                 <button onClick={clearFilters} className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition hover:text-slate-700">
                   <X size={12} /> Clear all
@@ -393,7 +433,19 @@ export default function App() {
         ) : (
           <div className="grid auto-cols-[280px] grid-flow-col gap-4 overflow-x-auto pb-6">
             {STAGES.map((stage) => {
-              const items = filtered.filter((a) => a.status === stage.id);
+              const stageItems = filtered.filter((a) => a.status === stage.id);
+              const priorityRank = (a: Application) => {
+                if (a.is_emergency) return 0;
+                if (a.is_important) return 1;
+                return 2;
+              };
+              const daysStuck = (a: Application) =>
+                a.updated_at ? Math.floor((Date.now() - new Date(a.updated_at).getTime()) / 86400000) : 0;
+              const items = [...stageItems].sort((a, b) => {
+                const r = priorityRank(a) - priorityRank(b);
+                if (r !== 0) return r;
+                return daysStuck(b) - daysStuck(a);
+              });
               const Icon = stage.icon;
               return (
                 <div key={stage.id} className="flex max-h-[calc(100vh-220px)] animate-slide-up flex-col rounded-2xl border border-slate-200 bg-slate-50/80 shadow-sm">
