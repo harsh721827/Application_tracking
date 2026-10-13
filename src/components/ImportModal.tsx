@@ -139,42 +139,30 @@ export default function ImportModal({ onClose, onDone }: Props) {
                   <table className="w-full text-[11px]">
                     <thead>
                       <tr className="border-b border-slate-200">
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अ.क्र</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">वार्ड क्र</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">मालमत्ता क्र</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">भाग क्र</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्ज क्र</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्ज नोंदविल्याची तारीख</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्ज नोंद करून झालेले दिवस</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अ.क्र.</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">आवक अर्ज क्र.</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">आवक अर्ज दिनांक</th>
+                        <th className="px-2 py-1 text-left font-semibold text-slate-700">मालमत्ता धारकाचे नाव</th>
                         <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्जाचा प्रकार</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">अर्जाची स्थिती</th>
-                        <th className="px-2 py-1 text-left font-semibold text-slate-700">शेरा</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b border-slate-100 text-slate-400">
                         <td className="px-2 py-1">1</td>
-                        <td className="px-2 py-1">BMC5</td>
-                        <td className="px-2 py-1">123</td>
-                        <td className="px-2 py-1">2</td>
-                        <td className="px-2 py-1">2026/001</td>
-                        <td className="px-2 py-1">2026-01-15</td>
-                        <td className="px-2 py-1">0</td>
-                        <td className="px-2 py-1">नवीन नोंदणी</td>
-                        <td className="px-2 py-1">प्राप्त</td>
-                        <td className="px-2 py-1">—</td>
+                        <td className="px-2 py-1">10459</td>
+                        <td className="px-2 py-1">30-07-2026</td>
+                        <td className="px-2 py-1">Rupesh Laxman Dhanawade</td>
+                        <td className="px-2 py-1">नवीन नोंद</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
                 <div className="mt-3 space-y-1 text-[11px] text-slate-500">
-                  <p><span className="font-medium text-slate-700">अर्ज क्र</span> — required (becomes application number & name)</p>
-                  <p><span className="font-medium text-slate-700">वार्ड क्र</span> — e.g. BMC5 or just 5 (auto-adds BMC prefix)</p>
-                  <p><span className="font-medium text-slate-700">मालमत्ता क्र + भाग क्र</span> — saved into the Notes field</p>
-                  <p><span className="font-medium text-slate-700">अर्ज नोंदविल्याची तारीख</span> — becomes the received date</p>
-                  <p><span className="font-medium text-slate-700">अर्जाचा प्रकार</span> — becomes the subject (e.g. नवीन नोंदणी, भाडेकरी, वधगत दुरुस्ती, छोटी दुरुस्ती)</p>
-                  <p><span className="font-medium text-slate-700">अर्जाची स्थिती</span> — sets the board status (प्राप्त, स्पॉट, कायम, etc.)</p>
-                  <p><span className="font-medium text-slate-700">शेरा</span> — saved as remarks</p>
+                  <p><span className="font-medium text-slate-700">मालमत्ता धारकाचे नाव</span> — required (becomes applicant name)</p>
+                  <p><span className="font-medium text-slate-700">आवक अर्ज क्र.</span> — becomes the application number</p>
+                  <p><span className="font-medium text-slate-700">आवक अर्ज दिनांक</span> — becomes the received date (DD-MM-YYYY format supported)</p>
+                  <p><span className="font-medium text-slate-700">अर्जाचा प्रकार</span> — becomes the subject (नवीन नोंद → New Registration, भाडेकरी → Bhadekari, वधगत दुरुस्ती → Wadhghat Durusti, छोटी दुरुस्ती → Minor Correction)</p>
+                  <p className="text-slate-400">स्थिती, वार्ड, शेरा, मालमत्ता क्र, भाग क्र — these columns are also recognized if present</p>
                 </div>
                 <button
                   onClick={handleDownloadTemplate}

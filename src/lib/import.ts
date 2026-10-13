@@ -90,6 +90,13 @@ const HEADER_ALIASES: Record<string, string> = {
   'अर्जाचा प्रकार': 'subject',
   'अर्जाची स्थिती': 'status',
   'शेरा': 'notes',
+
+  // New Marathi Excel format (आवक format)
+  'आवक अर्ज क्र.': 'application_number',
+  'आवक अर्ज क्र': 'application_number',
+  'आवक अर्ज दिनांक': 'received_date',
+  'मालमत्ता धारकाचे नाव': 'applicant_name',
+  'मालमत्ता धारकाचे नाव.': 'applicant_name',
 };
 
 function normalizeHeader(h: string): string {
@@ -165,10 +172,20 @@ function validateWard(val: unknown): string | null {
   return v.startsWith('BMC') ? v : null;
 }
 
+const MARATHI_SUBJECT_MAP: Record<string, string> = {
+  'नवीन नोंद': 'New Registration',
+  'नवीन नोंदणी': 'New Registration',
+  'भाडेकरी': 'Bhadekari',
+  'वधगत दुरुस्ती': 'Wadhghat Durusti',
+  'छोटी दुरुस्ती': 'Minor Correction',
+};
+
 function validateSubject(val: unknown): string | null {
   if (typeof val !== 'string') return null;
   const v = val.trim();
   if (!v) return null;
+  const marathiMatch = MARATHI_SUBJECT_MAP[v];
+  if (marathiMatch) return marathiMatch;
   const match = SUBJECTS.find((s) => s.toLowerCase() === v.toLowerCase());
   return match ?? v;
 }
@@ -181,7 +198,22 @@ function parseDate(val: unknown): string | null {
     return d.toISOString().slice(0, 10);
   }
   if (typeof val === 'string') {
-    const d = new Date(val);
+    const v = val.trim();
+    // DD-MM-YYYY format
+    const ddmm = v.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (ddmm) {
+      const [, dd, mm, yyyy] = ddmm;
+      const d = new Date(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
+      if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    }
+    // DD/MM/YYYY format
+    const ddsl = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ddsl) {
+      const [, dd, mm, yyyy] = ddsl;
+      const d = new Date(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
+      if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    }
+    const d = new Date(v);
     if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
   }
   return null;
@@ -206,16 +238,11 @@ export async function downloadTemplate(): Promise<void> {
   const XLSX = await import('xlsx');
   const data = [
     {
-      'अ.क्र': 1,
-      'वार्ड क्र': 'BMC5',
-      'मालमत्ता क्र': '123',
-      'भाग क्र': '2',
-      'अर्ज क्र': '2026/001',
-      'अर्ज नोंदविल्याची तारीख': '2026-01-15',
-      'अर्ज नोंद करून झालेले दिवस': 0,
-      'अर्जाचा प्रकार': 'नवीन नोंदणी',
-      'अर्जाची स्थिती': 'प्राप्त',
-      'शेरा': '',
+      'अ.क्र.': 1,
+      'आवक अर्ज क्र.': '10459',
+      'आवक अर्ज दिनांक': '30-07-2026',
+      'मालमत्ता धारकाचे नाव': 'Rupesh Laxman Dhanawade',
+      'अर्जाचा प्रकार': 'नवीन नोंद',
     },
   ];
   const ws = XLSX.utils.json_to_sheet(data);
