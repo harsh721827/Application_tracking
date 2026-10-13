@@ -13,9 +13,12 @@ import {
   Send,
   Siren,
   Star,
+  AlertTriangle,
+  Filter,
+  Zap,
 } from 'lucide-react';
 import type { Application } from '../lib/supabase';
-import { STAGES, WARDS } from '../lib/stages';
+import { STAGES, WARDS, STAGE_MAP } from '../lib/stages';
 
 interface Props {
   apps: Application[];
@@ -47,6 +50,25 @@ const STROKE_COLORS: Record<string, string> = {
   'bg-emerald-500': '#10b981',
   'bg-rose-500': '#f43f5e',
 };
+
+const STAGE_HEX: Record<string, string> = {
+  received: '#64748b',
+  spot: '#0ea5e9',
+  lipik_sign_pending: '#06b6d4',
+  karadhikari_sign_pending: '#3b82f6',
+  correction_pending: '#f59e0b',
+  noteshit_lipik_sign_pending: '#8b5cf6',
+  noteshit_karadhikari_sign_pending: '#6366f1',
+  sent_to_approval: '#10b981',
+  rejected: '#f43f5e',
+};
+
+const DAY_MS = 86400000;
+
+function daysSince(dateStr: string | null): number {
+  if (!dateStr) return 0;
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / DAY_MS);
+}
 
 export default function Dashboard({ apps, onCardClick }: Props) {
   const stats = useMemo(() => {
@@ -84,12 +106,14 @@ export default function Dashboard({ apps, onCardClick }: Props) {
       .map(([subject, count]) => ({ subject, count }));
 
     const now = Date.now();
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(now - (6 - i) * 86400000);
+    const days30 = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(now - (29 - i) * DAY_MS);
       const key = d.toISOString().slice(0, 10);
       return {
-        label: d.toLocaleDateString('en', { weekday: 'short' }),
+        label: d.toLocaleDateString('en', { day: 'numeric', month: 'short' }),
+        weekday: d.toLocaleDateString('en', { weekday: 'short' }),
         count: apps.filter((a) => a.created_at?.slice(0, 10) === key).length,
+        isToday: i === 29,
       };
     });
 
@@ -104,7 +128,7 @@ export default function Dashboard({ apps, onCardClick }: Props) {
       ? Math.round(processedApps.reduce((sum, a) => {
           const start = new Date(a.received_date!).getTime();
           const end = new Date(a.updated_at).getTime();
-          return sum + Math.max(0, (end - start) / 86400000);
+          return sum + Math.max(0, (end - start) / DAY_MS);
         }, 0) / processedApps.length)
       : 0;
 
@@ -119,15 +143,66 @@ export default function Dashboard({ apps, onCardClick }: Props) {
     }));
     const maxCell = Math.max(1, ...heatmap.flatMap((h) => h.stages.map((s) => s.count)));
 
+    // Aging analysis: how many days each in-progress app has been stuck
+    const agingBuckets = { fresh: 0, week: 0, month: 0, twoMonths: 0, critical: 0 };
+    const stuckByStage: Record<string, { week: number; month: number; critical: number }> = {};
+    STAGES.forEach((s) => { stuckByStage[s.id] = { week: 0, month: 0, critical: 0 }; });
+
+    apps.forEach((a) => {
+      if (a.status === 'sent_to_approval' || a.status === 'rejected') return;
+      const d = daysSince(a.updated_at);
+      if (d < 7) agingBuckets.fresh++;
+      else if (d < 30) { agingBuckets.week++; stuckByStage[a.status].week++; }
+      else if (d < 60) { agingBuckets.month++; stuckByStage[a.status].month++; }
+      else { agingBuckets.twoMonths++; stuckByStage[a.status].critical++; }
+      if (d >= 60) agingBuckets.critical++;
+    });
+
+    const stuckTotal = agingBuckets.week + agingBuckets.month + agingBuckets.twoMonths;
+
+    // Top 5 longest-stuck applications
+    const longestStuck = apps
+      .filter((a) => a.status !== 'sent_to_approval' && a.status !== 'rejected')
+      .map((a) => ({ app: a, days: daysSince(a.updated_at) }))
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 5);
+
+    // Trend: last 7 days vs previous 7 days
+    const last7 = days30.slice(23, 30).reduce((s, d) => s + d.count, 0);
+    const prev7 = days30.slice(16, 23).reduce((s, d) => s + d.count, 0);
+    const trendDelta = prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : last7 > 0 ? 100 : 0;
+
+    // Funnel: cumulative counts at each stage transition
+    const funnelStages = STAGES.filter((s) => s.id !== 'rejected');
+    const funnel = funnelStages.map((s) => {
+      const reached = apps.filter((a) => {
+        const idx = funnelStages.findIndex((fs) => fs.id === a.status);
+        const sIdx = funnelStages.findIndex((fs) => fs.id === s.id);
+        if (a.status === 'rejected') return false;
+        return idx >= sIdx;
+      }).length;
+      return { stage: s, reached, pct: total > 0 ? Math.round((reached / total) * 100) : 0 };
+    });
+
+    // Emergency + Important breakdown by status
+    const priorityByStage = STAGES.map((s) => ({
+      stage: s,
+      emergency: apps.filter((a) => a.status === s.id && a.is_emergency).length,
+      important: apps.filter((a) => a.status === s.id && a.is_important).length,
+      normal: apps.filter((a) => a.status === s.id && !a.is_emergency && !a.is_important).length,
+    }));
+
     return {
       total, inProgress, approved, rejected, emergency, important,
       completionRate, rejectionRate,
       stageCounts, wardCounts, subjectCounts, unspecified,
-      days, bottleneck, avgProcessingDays, heatmap, maxCell,
+      days30, bottleneck, avgProcessingDays, heatmap, maxCell,
+      agingBuckets, stuckByStage, stuckTotal, longestStuck,
+      trendDelta, last7, funnel, priorityByStage,
     };
   }, [apps]);
 
-  const maxDayCount = Math.max(1, ...stats.days.map((d) => d.count));
+  const maxDayCount = Math.max(1, ...stats.days30.map((d) => d.count));
   const maxStageCount = Math.max(1, ...stats.stageCounts.map((s) => s.count));
   const maxWardCount = Math.max(1, ...stats.wardCounts.map((w) => w.count));
   const maxSubjectCount = Math.max(1, ...stats.subjectCounts.map((s) => s.count), stats.unspecified);
@@ -160,9 +235,12 @@ export default function Dashboard({ apps, onCardClick }: Props) {
   }));
   const subjectSegments = buildDonutSegments(subjectDonutData);
 
+  const maxFunnel = Math.max(1, ...stats.funnel.map((f) => f.reached));
+
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 p-4 sm:p-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-8">
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
         <KpiCard label="Total" value={stats.total} icon={<FileText size={18} />} tone="from-slate-600 to-slate-800" onClick={onCardClick ? () => onCardClick('total') : undefined} />
         <KpiCard label="In Progress" value={stats.inProgress} icon={<Clock size={18} />} tone="from-amber-400 to-orange-500" onClick={onCardClick ? () => onCardClick('in_progress') : undefined} />
         <KpiCard label="Sent to Approval" value={stats.approved} icon={<Send size={18} />} tone="from-emerald-500 to-green-600" onClick={onCardClick ? () => onCardClick('approved') : undefined} />
@@ -173,22 +251,56 @@ export default function Dashboard({ apps, onCardClick }: Props) {
         <KpiCard label="Rejection" value={`${stats.rejectionRate}%`} icon={<XCircle size={18} />} tone="from-rose-400 to-pink-500" />
       </div>
 
-      {stats.bottleneck && stats.bottleneck.count > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 animate-slide-up">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-            <Layers size={18} />
+      {/* Alert Row: Bottleneck + Stuck + Trend */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {stats.bottleneck && stats.bottleneck.count > 0 && (
+          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 animate-slide-up">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+              <Layers size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-amber-800 truncate">
+                Bottleneck: {stats.bottleneck.stage.label}
+              </p>
+              <p className="text-xs text-amber-600">
+                {stats.bottleneck.count} app{stats.bottleneck.count !== 1 ? 's' : ''} waiting
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-amber-800">
-              Bottleneck: {stats.bottleneck.stage.label}
+        )}
+
+        {stats.stuckTotal > 0 && (
+          <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-gradient-to-r from-rose-50 to-red-50 px-4 py-3 animate-slide-up">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+              <AlertTriangle size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-rose-800">
+                {stats.stuckTotal} app{stats.stuckTotal !== 1 ? 's' : ''} stuck 7+ days
+              </p>
+              <p className="text-xs text-rose-600">
+                {stats.agingBuckets.week} this month · {stats.agingBuckets.month + stats.agingBuckets.twoMonths} over a month
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 px-4 py-3 animate-slide-up">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+            <TrendingUp size={18} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-sky-800">
+              {stats.last7} new in last 7 days
             </p>
-            <p className="text-xs text-amber-600">
-              {stats.bottleneck.count} application{stats.bottleneck.count !== 1 ? 's' : ''} waiting at this stage
+            <p className="text-xs text-sky-600">
+              {stats.trendDelta > 0 ? `+${stats.trendDelta}%` : `${stats.trendDelta}%`} vs previous week
             </p>
           </div>
         </div>
-      )}
+      </div>
 
+      {/* Row 1: Stage Donut + 30-Day Trend */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Stage Distribution" icon={<BarChart3 size={18} />} subtitle={`${stats.total} applications across ${STAGES.length} stages`}>
           <div className="flex items-center gap-6">
@@ -226,9 +338,41 @@ export default function Dashboard({ apps, onCardClick }: Props) {
           </div>
         </Panel>
 
+        <Panel title="30-Day Activity Trend" icon={<TrendingUp size={18} />} subtitle="New applications created per day">
+          <div className="flex items-end justify-between gap-[2px] pt-2">
+            {stats.days30.map((day, i) => (
+              <div key={i} className="group relative flex flex-1 flex-col items-center gap-1">
+                <div className="absolute -top-8 z-10 hidden whitespace-nowrap rounded-lg bg-slate-800 px-2 py-1 text-[10px] font-medium text-white shadow-lg group-hover:block">
+                  {day.label}: {day.count}
+                </div>
+                <span className="text-[10px] font-semibold text-slate-700">{day.count > 0 ? day.count : ''}</span>
+                <div className="flex h-28 w-full items-end justify-center">
+                  <div
+                    className={`w-full rounded-t-sm transition-all duration-500 ease-out ${day.isToday ? 'bg-gradient-to-t from-slate-800 to-slate-600' : 'bg-gradient-to-t from-slate-700 to-slate-400 hover:from-slate-800 hover:to-slate-500'}`}
+                    style={{ height: `${(day.count / maxDayCount) * 100}%`, minHeight: day.count > 0 ? '3px' : '1px', opacity: day.count > 0 ? 1 : 0.15 }}
+                  />
+                </div>
+                {i % 5 === 0 && (
+                  <span className="text-[9px] text-slate-400">{day.label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px]">
+            <span className="text-slate-400">Peak: {maxDayCount}/day</span>
+            <span className="text-slate-400">Avg: {Math.round(stats.last7 / 7 * 10) / 10}/day (last 7d)</span>
+            <span className={`font-semibold ${stats.trendDelta > 0 ? 'text-emerald-600' : stats.trendDelta < 0 ? 'text-rose-600' : 'text-slate-500'}`}>
+              {stats.trendDelta > 0 ? `▲ +${stats.trendDelta}%` : stats.trendDelta < 0 ? `▼ ${stats.trendDelta}%` : '— 0%'} WoW
+            </span>
+          </div>
+        </Panel>
+      </div>
+
+      {/* Row 2: Ward + Subject */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Ward Distribution" icon={<MapPin size={18} />} subtitle={`${stats.wardCounts.length} wards with applications`}>
           <div className="space-y-2">
-            {stats.wardCounts.slice(0, 8).map(({ ward, count }) => (
+            {stats.wardCounts.slice(0, 10).map(({ ward, count }) => (
               <div key={ward} className="group flex items-center gap-2">
                 <span className="w-12 text-xs font-medium text-slate-600">{ward}</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
@@ -290,25 +434,119 @@ export default function Dashboard({ apps, onCardClick }: Props) {
             </div>
           </div>
         </Panel>
+      </div>
 
-        <Panel title="7-Day Activity Trend" icon={<TrendingUp size={18} />} subtitle="New applications created per day">
-          <div className="flex items-end justify-between gap-2 pt-2">
-            {stats.days.map((day, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-semibold text-slate-700">{day.count}</span>
-                <div className="flex h-32 w-full items-end justify-center">
-                  <div
-                    className="w-full max-w-[2.5rem] rounded-t-md bg-gradient-to-t from-slate-700 to-slate-500 transition-all duration-700 ease-out hover:from-slate-800 hover:to-slate-600"
-                    style={{ height: `${(day.count / maxDayCount) * 100}%`, minHeight: day.count > 0 ? '4px' : '2px', opacity: day.count > 0 ? 1 : 0.2 }}
-                  />
+      {/* Row 3: Aging Analysis + Longest Stuck */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Panel title="Aging Analysis" icon={<Timer size={18} />} subtitle="How long applications have been in their current stage">
+          <div className="space-y-3">
+            <div className="grid grid-cols-4 gap-2">
+              <AgingBucket label="Fresh" sub="< 7 days" count={stats.agingBuckets.fresh} color="bg-emerald-500" text="text-emerald-700" bg="bg-emerald-50 border-emerald-200" />
+              <AgingBucket label="Stuck" sub="7-29 days" count={stats.agingBuckets.week} color="bg-amber-500" text="text-amber-700" bg="bg-amber-50 border-amber-200" />
+              <AgingBucket label="Late" sub="30-59 days" count={stats.agingBuckets.month} color="bg-orange-500" text="text-orange-700" bg="bg-orange-50 border-orange-200" />
+              <AgingBucket label="Critical" sub="60+ days" count={stats.agingBuckets.twoMonths} color="bg-rose-500" text="text-rose-700" bg="bg-rose-50 border-rose-200" />
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[11px] font-medium text-slate-500">Stuck applications by stage</p>
+              {STAGES.filter((s) => {
+                const st = stats.stuckByStage[s.id];
+                return st && (st.week + st.month + st.critical) > 0;
+              }).map((s) => {
+                const st = stats.stuckByStage[s.id];
+                const total = st.week + st.month + st.critical;
+                return (
+                  <div key={s.id} className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                    <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{s.shortLabel}</span>
+                    <div className="flex w-32 items-center gap-0.5">
+                      <div className="h-2 flex-1 overflow-hidden rounded-l-full bg-amber-400" style={{ width: `${(st.week / total) * 100}%` }} title={`${st.week} stuck 7-29 days`} />
+                      <div className="h-2 flex-1 bg-orange-400" style={{ width: `${(st.month / total) * 100}%` }} title={`${st.month} stuck 30-59 days`} />
+                      <div className="h-2 flex-1 overflow-hidden rounded-r-full bg-rose-500" style={{ width: `${(st.critical / total) * 100}%` }} title={`${st.critical} stuck 60+ days`} />
+                    </div>
+                    <span className="w-6 text-right text-[11px] font-semibold text-slate-700">{total}</span>
+                  </div>
+                );
+              })}
+              {stats.stuckTotal === 0 && (
+                <p className="py-2 text-sm text-emerald-600">All applications are progressing on time.</p>
+              )}
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title="Longest Stuck Applications" icon={<AlertTriangle size={18} />} subtitle="Top 5 needing immediate attention">
+          <div className="space-y-2">
+            {stats.longestStuck.map(({ app, days }, i) => {
+              const stage = STAGE_MAP[app.status];
+              const severity = days >= 60 ? 'rose' : days >= 30 ? 'orange' : 'amber';
+              return (
+                <div key={app.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 transition hover:bg-slate-50">
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${severity === 'rose' ? 'bg-rose-100 text-rose-700' : severity === 'orange' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-slate-700">{app.applicant_name}</p>
+                    <p className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                      <span className={`h-1.5 w-1.5 rounded-full ${stage?.dot ?? 'bg-slate-400'}`} />
+                      {stage?.shortLabel ?? app.status}
+                      {app.application_number && <span>· #{app.application_number}</span>}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold ${severity === 'rose' ? 'bg-rose-100 text-rose-700' : severity === 'orange' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {days}d
+                  </span>
                 </div>
-                <span className="text-[11px] text-slate-400">{day.label}</span>
-              </div>
-            ))}
+              );
+            })}
+            {stats.longestStuck.length === 0 && (
+              <p className="py-4 text-center text-sm text-slate-400">No stuck applications.</p>
+            )}
           </div>
         </Panel>
       </div>
 
+      {/* Row 4: Workflow Funnel */}
+      <Panel title="Workflow Funnel" icon={<Filter size={18} />} subtitle="How many applications have reached each stage">
+        <div className="space-y-1.5">
+          {stats.funnel.map((f, i) => {
+            const prev = i > 0 ? stats.funnel[i - 1] : null;
+            const dropOff = prev ? prev.reached - f.reached : 0;
+            const dropPct = prev && prev.reached > 0 ? Math.round((dropOff / prev.reached) * 100) : 0;
+            return (
+              <div key={f.stage.id} className="group">
+                <div className="flex items-center gap-3">
+                  <span className="w-28 shrink-0 truncate text-xs font-medium text-slate-600">{f.stage.shortLabel}</span>
+                  <div className="relative h-7 flex-1 overflow-hidden rounded-lg bg-slate-100">
+                    <div
+                      className="flex h-full items-center justify-end rounded-lg px-2 transition-all duration-700 ease-out"
+                      style={{
+                        width: `${(f.reached / maxFunnel) * 100}%`,
+                        backgroundColor: STAGE_HEX[f.stage.id] ?? '#64748b',
+                      }}
+                    >
+                      <span className="text-[11px] font-bold text-white drop-shadow">
+                        {f.reached} · {f.pct}%
+                      </span>
+                    </div>
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-[11px] text-slate-400">
+                    {prev && dropOff > 0 ? (
+                      <span className="text-rose-500">-{dropOff} ({dropPct}%)</span>
+                    ) : i === 0 ? (
+                      <span className="text-slate-500">start</span>
+                    ) : (
+                      <span className="text-emerald-500">no loss</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
+
+      {/* Row 5: Heatmap */}
       {stats.heatmap.length > 0 && (
         <Panel title="Ward × Stage Heatmap" icon={<Grid3x3 size={18} />} subtitle="Application density across wards and workflow stages">
           <div className="overflow-x-auto">
@@ -351,16 +589,49 @@ export default function Dashboard({ apps, onCardClick }: Props) {
         </Panel>
       )}
 
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-          <Timer size={18} />
+      {/* Bottom Row: Processing Time + Priority Breakdown */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+            <Timer size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Average Processing Time</p>
+            <p className="text-xs text-slate-500">
+              {stats.avgProcessingDays} day{stats.avgProcessingDays !== 1 ? 's' : ''} from received to terminal stage
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-800">Average Processing Time</p>
-          <p className="text-xs text-slate-500">
-            {stats.avgProcessingDays} day{stats.avgProcessingDays !== 1 ? 's' : ''} from received to terminal stage
-          </p>
-        </div>
+
+        <Panel title="Priority Breakdown by Stage" icon={<Zap size={18} />} subtitle="Emergency & Important applications across workflow">
+          <div className="space-y-1.5">
+            {stats.priorityByStage
+              .filter((p) => p.emergency + p.important + p.normal > 0)
+              .map((p) => {
+                const total = p.emergency + p.important + p.normal;
+                return (
+                  <div key={p.stage.id} className="flex items-center gap-2">
+                    <span className="w-28 shrink-0 truncate text-xs text-slate-600">{p.stage.shortLabel}</span>
+                    <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      {p.emergency > 0 && (
+                        <div className="h-full bg-rose-500 transition-all duration-500" style={{ width: `${(p.emergency / total) * 100}%` }} title={`${p.emergency} emergency`} />
+                      )}
+                      {p.important > 0 && (
+                        <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${(p.important / total) * 100}%` }} title={`${p.important} important`} />
+                      )}
+                      <div className="h-full bg-slate-300 transition-all duration-500" style={{ width: `${(p.normal / total) * 100}%` }} />
+                    </div>
+                    <span className="w-8 text-right text-[11px] font-semibold text-slate-700">{total}</span>
+                  </div>
+                );
+              })}
+            <div className="flex items-center gap-4 pt-1 text-[10px] text-slate-400">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Emergency</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Important</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-300" /> Normal</span>
+            </div>
+          </div>
+        </Panel>
       </div>
     </div>
   );
@@ -384,6 +655,19 @@ function KpiCard({ label, value, icon, tone, onClick }: {
   );
   if (onClick) return <button onClick={onClick} className={`${cls} text-left`}>{inner}</button>;
   return <div className={cls}>{inner}</div>;
+}
+
+function AgingBucket({ label, sub, count, color, text, bg }: {
+  label: string; sub: string; count: number; color: string; text: string; bg: string;
+}) {
+  return (
+    <div className={`rounded-lg border ${bg} p-2.5 text-center`}>
+      <div className={`mx-auto mb-1.5 flex h-2 w-2 items-center justify-center rounded-full ${color}`} />
+      <p className={`text-lg font-bold ${text}`}>{count}</p>
+      <p className="text-[10px] font-medium text-slate-500">{label}</p>
+      <p className="text-[9px] text-slate-400">{sub}</p>
+    </div>
+  );
 }
 
 function Panel({ title, icon, subtitle, children }: {
